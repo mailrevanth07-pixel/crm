@@ -60,43 +60,9 @@ app.use(requestLogger);
 app.use(generalLimiter);
 app.use(speedLimiter);
 
-// CORS Configuration
+// CORS Configuration - Simplified and more permissive
 const corsOptions = {
-  origin: function (origin: string | undefined, callback: Function) {
-    console.log('CORS check:', { origin, hasOrigin: !!origin });
-    
-    // Allow requests with no origin (mobile apps, Postman, etc.)
-    if (!origin) {
-      console.log('CORS: Allowing request with no origin');
-      return callback(null, true);
-    }
-    
-    const allowedOrigins = [
-      process.env.FRONTEND_URL,
-      process.env.CORS_ORIGIN,
-      'http://localhost:3000',
-      'https://localhost:3000',
-      'http://127.0.0.1:3000',
-      'https://127.0.0.1:3000',
-      'https://crm-ten-dusky.vercel.app' // Add Vercel URL
-    ].filter(Boolean); // Remove undefined values
-    
-    console.log('CORS: Allowed origins:', allowedOrigins);
-    
-    // Check if origin is allowed
-    if (allowedOrigins.includes(origin)) {
-      console.log('CORS: Origin allowed in list:', origin);
-      callback(null, true);
-    } else if (origin && origin.includes('.vercel.app')) {
-      // Allow all Vercel subdomains
-      console.log('CORS: Origin allowed as Vercel subdomain:', origin);
-      callback(null, true);
-    } else {
-      console.log('CORS: Origin blocked:', origin);
-      console.log('CORS: Allowed origins:', allowedOrigins);
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: true, // Allow all origins for now
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: [
@@ -109,17 +75,18 @@ const corsOptions = {
     'Pragma'
   ],
   exposedHeaders: ['Authorization'],
-  optionsSuccessStatus: 200 // Some legacy browsers choke on 204
+  optionsSuccessStatus: 200
 };
 
 app.use(cors(corsOptions));
 
-// Additional CORS middleware as fallback
+// Additional CORS middleware as fallback - More permissive
 app.use((req, res, next) => {
   const origin = req.get('Origin');
   console.log('Additional CORS middleware:', { origin, method: req.method });
   
-  if (origin && (origin.includes('.vercel.app') || origin.includes('localhost'))) {
+  // Allow all origins for now
+  if (origin) {
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Access-Control-Allow-Credentials', 'true');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
@@ -152,12 +119,18 @@ app.get('/cors-debug', (req, res) => {
     status: 'OK',
     origin: req.get('Origin'),
     headers: req.headers,
-    allowedOrigins: [
-      process.env.FRONTEND_URL,
-      process.env.CORS_ORIGIN,
-      'http://localhost:3000',
-      'https://localhost:3000'
-    ].filter(Boolean)
+    message: 'CORS is working!',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Simple test endpoint
+app.get('/api/test', (req, res) => {
+  res.json({
+    success: true,
+    message: 'API is working!',
+    origin: req.get('Origin'),
+    timestamp: new Date().toISOString()
   });
 });
 
