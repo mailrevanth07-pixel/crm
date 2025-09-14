@@ -8,6 +8,13 @@ const router = express.Router();
 // Polling endpoint for real-time updates
 router.get('/poll', authMiddleware, async (req: AuthenticatedRequest, res) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        error: 'User not authenticated'
+      });
+    }
+
     const userId = req.user.id;
     const lastPollTime = req.query.lastPollTime ? new Date(req.query.lastPollTime as string) : new Date(Date.now() - 60000); // Default to 1 minute ago
 
