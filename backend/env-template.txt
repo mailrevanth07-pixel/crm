@@ -1,0 +1,17 @@
+# Environment Variables Template for Render Deployment
+# Copy these variables to your Render dashboard Environment tab
+
+# Database Configuration (REQUIRED)
+DATABASE_URL=postgresql://username:password@hostname:port/database
+
+# Application Configuration (REQUIRED)
+NODE_ENV=production
+JWT_SECRET=your-super-secret-jwt-key-here
+JWT_REFRESH_SECRET=your-super-secret-refresh-key-here
+
+# Frontend Configuration (REQUIRED)
+FRONTEND_URL=https://your-frontend-app.vercel.app
+
+# Optional Configuration
+REDIS_URL=redis://your-redis-url
+CORS_ORIGIN=https://your-frontend-app.vercel.app

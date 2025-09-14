@@ -119,7 +119,7 @@ const dbConfig: DatabaseConfig = databaseUrl ? parsedConfig as DatabaseConfig : 
 console.log('Database configuration:', {
   hasUrl: !!databaseUrl,
   urlLength: databaseUrl?.length || 0,
-  isRender: databaseUrl?.includes('render.com') || false,
+  isRender: databaseUrl?.includes('render.com') || process.env.RENDER === 'true',
   parsedConfig: databaseUrl ? {
     host: parsedConfig.host || 'undefined',
     port: parsedConfig.port || 'undefined',
@@ -129,10 +129,26 @@ console.log('Database configuration:', {
   } : 'Using fallback config'
 });
 
+// Log environment variables for debugging
+console.log('Environment variables:', {
+  NODE_ENV: process.env.NODE_ENV,
+  RENDER: process.env.RENDER,
+  DATABASE_URL: databaseUrl ? 'Set' : 'Not set',
+  DB_HOST: process.env.DB_HOST || 'Not set',
+  DB_PORT: process.env.DB_PORT || 'Not set',
+  DB_NAME: process.env.DB_NAME || 'Not set',
+  DB_USER: process.env.DB_USER || 'Not set',
+  DB_PASSWORD: process.env.DB_PASSWORD ? 'Set' : 'Not set'
+});
+
 // Log the actual database URL for debugging (without password)
 if (databaseUrl) {
-  const url = new URL(databaseUrl);
-  console.log('Database URL:', `${url.protocol}//${url.username}:***@${url.hostname}:${url.port}${url.pathname}`);
+  try {
+    const url = new URL(databaseUrl);
+    console.log('Database URL:', `${url.protocol}//${url.username}:***@${url.hostname}:${url.port}${url.pathname}`);
+  } catch (error) {
+    console.log('Database URL: Invalid format');
+  }
 } else {
   console.log('Database URL: Not set');
 }

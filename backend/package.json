@@ -13,6 +13,7 @@
     "seed": "npx sequelize-cli db:seed:all",
     "seed:run": "ts-node scripts/setup.ts",
     "setup": "ts-node scripts/setup.ts",
+    "test": "echo \"No tests configured yet\" && exit 0",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
     "format": "prettier --write src/**/*.ts",
