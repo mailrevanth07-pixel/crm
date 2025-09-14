@@ -12,7 +12,13 @@ export class JobQueueService {
   private socketHandler?: SocketHandler;
 
   private constructor() {
-    const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+    const redisUrl = process.env.REDIS_URL;
+    
+    // Only initialize job queues if Redis URL is provided
+    if (!redisUrl) {
+      console.warn('⚠️  REDIS_URL not provided, job queues will not be initialized');
+      return;
+    }
     
     try {
       // Initialize job queues with error handling
@@ -215,7 +221,11 @@ export class JobQueueService {
     data: any;
     priority?: 'low' | 'normal' | 'high';
     delay?: number;
-  }): Promise<Bull.Job> {
+  }): Promise<Bull.Job | null> {
+    if (!this.notificationQueue) {
+      console.warn('⚠️  Notification queue not initialized, skipping job');
+      return null;
+    }
     return this.notificationQueue.add('send-notification', data, {
       priority: this.getPriorityValue(data.priority),
       delay: data.delay || 0,
@@ -235,7 +245,11 @@ export class JobQueueService {
     data: any;
     priority?: 'low' | 'normal' | 'high';
     delay?: number;
-  }): Promise<Bull.Job> {
+  }): Promise<Bull.Job | null> {
+    if (!this.emailQueue) {
+      console.warn('⚠️  Email queue not initialized, skipping job');
+      return null;
+    }
     return this.emailQueue.add('send-email', data, {
       priority: this.getPriorityValue(data.priority),
       delay: data.delay || 0,
@@ -248,7 +262,11 @@ export class JobQueueService {
   }
 
   // Add cleanup job
-  public async addCleanupJob(type: string, data: any = {}, delay: number = 0): Promise<Bull.Job> {
+  public async addCleanupJob(type: string, data: any = {}, delay: number = 0): Promise<Bull.Job | null> {
+    if (!this.cleanupQueue) {
+      console.warn('⚠️  Cleanup queue not initialized, skipping job');
+      return null;
+    }
     return this.cleanupQueue.add(type, data, {
       delay,
       attempts: 1
@@ -257,6 +275,11 @@ export class JobQueueService {
 
   // Schedule recurring cleanup jobs
   public scheduleRecurringJobs(): void {
+    if (!this.cleanupQueue) {
+      console.warn('⚠️  Cleanup queue not initialized, skipping recurring jobs');
+      return;
+    }
+    
     // Clean up expired sessions every hour
     this.cleanupQueue.add('cleanup-expired-sessions', {}, {
       repeat: { cron: '0 * * * *' }, // Every hour
@@ -274,6 +297,16 @@ export class JobQueueService {
 
   // Get queue statistics
   public async getQueueStats(): Promise<any> {
+    if (!this.notificationQueue || !this.emailQueue || !this.cleanupQueue) {
+      return {
+        notification: { waiting: 0, active: 0, completed: 0, failed: 0 },
+        email: { waiting: 0, active: 0, completed: 0, failed: 0 },
+        cleanup: { waiting: 0, active: 0, completed: 0, failed: 0 },
+        total: { waiting: 0, active: 0, completed: 0, failed: 0 },
+        message: 'Queues not initialized'
+      };
+    }
+
     const [notificationStats, emailStats, cleanupStats] = await Promise.all([
       this.getQueueStatsForQueue(this.notificationQueue),
       this.getQueueStatsForQueue(this.emailQueue),

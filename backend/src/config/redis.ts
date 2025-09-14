@@ -9,10 +9,17 @@ export class RedisService {
   private isConnected: boolean = false;
 
   private constructor() {
-    const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+    const redisUrl = process.env.REDIS_URL;
+    
+    // Debug: Log Redis configuration
+    console.log('Redis configuration:', {
+      hasRedisUrl: !!redisUrl,
+      redisUrl: redisUrl ? 'Set' : 'Not set',
+      nodeEnv: process.env.NODE_ENV
+    });
     
     // Only create Redis clients if REDIS_URL is provided
-    if (process.env.REDIS_URL) {
+    if (redisUrl) {
       // Enhanced configuration for Redis Cloud
       const redisConfig = {
         url: redisUrl,
