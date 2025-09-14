@@ -49,9 +49,32 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     
     // Small delay before reconnecting
     setTimeout(() => {
-      connectSocket();
+      // Force reconnection by creating a new socket
+      if (isAuthenticated && user) {
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://crm-19gz.onrender.com';
+        const token = localStorage.getItem('accessToken');
+        
+        if (token) {
+          const newSocket = io(API_URL, {
+            auth: { token: token },
+            transports: ['polling', 'websocket'],
+            timeout: 15000,
+            reconnection: true,
+            reconnectionAttempts: 10,
+            reconnectionDelay: 1000,
+            reconnectionDelayMax: 5000,
+            autoConnect: true,
+            forceNew: true,
+            upgrade: true,
+            rememberUpgrade: true,
+            withCredentials: true
+          });
+          
+          setSocket(newSocket);
+        }
+      }
     }, 100);
-  }, [socket]);
+  }, [socket, isAuthenticated, user]);
 
   // Mobile event handlers (defined outside connectSocket for proper scope)
   const handleVisibilityChange = useCallback(() => {
@@ -110,7 +133,10 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
 
   // Connect socket with enhanced configuration
   const connectSocket = useCallback(() => {
-    if (!isAuthenticated || !user) return;
+    if (!isAuthenticated || !user) {
+      console.log('Socket connection skipped: Not authenticated or no user');
+      return;
+    }
 
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://crm-19gz.onrender.com';
     
@@ -118,7 +144,9 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     console.log('Socket API Configuration:', {
       NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
       resolvedAPI_URL: API_URL,
-      nodeEnv: process.env.NODE_ENV
+      nodeEnv: process.env.NODE_ENV,
+      isAuthenticated,
+      userEmail: user?.email
     });
     
     const token = getFreshToken();
@@ -129,6 +157,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
       return;
     }
 
+    console.log('Attempting socket connection...');
     setConnectionStatus('connecting');
 
     // Create socket connection with mobile-optimized configuration
@@ -152,7 +181,11 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
 
     // Connection event handlers
     newSocket.on('connect', () => {
-      console.log('Socket connected successfully');
+      console.log('Socket connected successfully', {
+        socketId: newSocket.id,
+        transport: newSocket.io.engine?.transport?.name,
+        user: user?.email
+      });
       setIsConnected(true);
       setConnectionStatus('connected');
       reconnectAttemptsRef.current = 0; // Reset reconnection attempts

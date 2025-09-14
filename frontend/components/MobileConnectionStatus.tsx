@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSocket } from '@/contexts/SocketContext';
+import { useAuth } from '@/hooks/useAuth';
 
 interface MobileConnectionStatusProps {
   className?: string;
@@ -9,6 +10,7 @@ export default function MobileConnectionStatus({ className = '' }: MobileConnect
   const [isMobile, setIsMobile] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const { socket, isConnected, connectionStatus } = useSocket();
+  const { isAuthenticated, user } = useAuth();
 
   useEffect(() => {
     // Detect if running on mobile
@@ -43,12 +45,13 @@ export default function MobileConnectionStatus({ className = '' }: MobileConnect
   };
 
   const getConnectionDetails = () => {
-    if (!socket) return 'Socket not initialized';
+    if (!socket) return 'Socket not initialized - Check authentication';
     
-    const transport = socket.io.engine?.transport?.name || 'unknown';
-    const readyState = socket.io.engine?.readyState || 'unknown';
+    const transport = socket.io?.engine?.transport?.name || 'unknown';
+    const readyState = socket.io?.engine?.readyState || 'unknown';
+    const connected = socket.connected || false;
     
-    return `Transport: ${transport} | State: ${readyState}`;
+    return `Transport: ${transport} | State: ${readyState} | Connected: ${connected}`;
   };
 
   return (
@@ -84,19 +87,39 @@ export default function MobileConnectionStatus({ className = '' }: MobileConnect
             <div className="text-xs text-gray-600">
               Mobile: {isMobile ? 'Yes' : 'No'}
             </div>
+            <div className="text-xs text-gray-600">
+              Auth: {isAuthenticated ? 'Yes' : 'No'}
+            </div>
+            <div className="text-xs text-gray-600">
+              User: {user?.email || 'None'}
+            </div>
+            <div className="text-xs text-gray-600">
+              API URL: {process.env.NEXT_PUBLIC_API_URL || 'Default'}
+            </div>
             
             {/* Reconnect Button */}
             {!isConnected && (
-              <button
-                onClick={() => {
-                  if (socket) {
-                    socket.connect();
-                  }
-                }}
-                className="w-full mt-2 px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition-colors"
-              >
-                Reconnect
-              </button>
+              <div className="space-y-1 mt-2">
+                <button
+                  onClick={() => {
+                    if (socket) {
+                      socket.connect();
+                    }
+                  }}
+                  className="w-full px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition-colors"
+                >
+                  Reconnect
+                </button>
+                <button
+                  onClick={() => {
+                    // Force page reload to reinitialize everything
+                    window.location.reload();
+                  }}
+                  className="w-full px-2 py-1 bg-orange-500 text-white text-xs rounded hover:bg-orange-600 transition-colors"
+                >
+                  Reload Page
+                </button>
+              </div>
             )}
           </div>
         </div>

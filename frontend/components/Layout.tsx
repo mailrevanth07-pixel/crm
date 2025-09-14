@@ -8,6 +8,7 @@ import RealtimeActivityStream from './RealtimeActivityStream';
 import ConnectionStatus from './ConnectionStatus';
 import OnlineUsers from './OnlineUsers';
 import MobileConnectionStatus from './MobileConnectionStatus';
+import SocketDebugInfo from './SocketDebugInfo';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -228,6 +229,7 @@ export default function Layout({ children }: LayoutProps) {
       <RealtimeNotifications />
       <RealtimeActivityStream />
       <MobileConnectionStatus />
+      <SocketDebugInfo />
       </div>
     </>
   );
