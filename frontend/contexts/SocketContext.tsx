@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode, useRef, useCallback } from 'react';
+import { io, Socket } from 'socket.io-client';
 import { useAuth } from './AuthContext';
-import socketManager from '../lib/socketManager';
 
 interface SocketContextType {
-  socket: any; // SocketManager instance
+  socket: Socket | null;
   isConnected: boolean;
   connectionStatus: 'connecting' | 'connected' | 'disconnected' | 'error';
   reconnect: () => void;
@@ -26,121 +26,162 @@ interface SocketProviderProps {
 }
 
 export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
+  const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('disconnected');
   const { isAuthenticated, user } = useAuth();
   const subscribedLeadsRef = useRef<Set<string>>(new Set());
 
-  // Initialize socket manager when authenticated
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      console.log('SocketProvider: Initializing socket manager for authenticated user', {
-        userEmail: user.email,
-        isAuthenticated
-      });
-      
-      // Small delay to ensure auth context is fully loaded
-      setTimeout(() => {
-        socketManager.init();
-      }, 100);
-    } else {
-      console.log('SocketProvider: User not authenticated, destroying socket manager');
-      socketManager.destroy();
-      setIsConnected(false);
-      setConnectionStatus('disconnected');
-      subscribedLeadsRef.current.clear();
+  // Detect mobile platform
+  const isMobile = typeof window !== 'undefined' && 
+    /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(navigator.userAgent.toLowerCase());
+
+  // Connect socket function
+  const connectSocket = useCallback(() => {
+    if (!isAuthenticated || !user) {
+      console.log('SocketProvider: Not authenticated, skipping socket connection');
+      return;
     }
-  }, [isAuthenticated, user]);
 
-  // Monitor connection status
-  useEffect(() => {
-    const checkConnectionStatus = () => {
-      const status = socketManager.getConnectionStatus();
-      setIsConnected(status.connected);
-      
-      if (status.connected) {
-        setConnectionStatus('connected');
-      } else if (status.connecting) {
-        setConnectionStatus('connecting');
-      } else {
-        setConnectionStatus('disconnected');
-      }
-    };
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      console.error('SocketProvider: No access token available');
+      setConnectionStatus('error');
+      return;
+    }
 
-    // Check status immediately
-    checkConnectionStatus();
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://crm-19gz.onrender.com';
+    
+    console.log('SocketProvider: Creating socket connection', {
+      url: API_URL,
+      isMobile,
+      hasToken: !!token,
+      userEmail: user.email
+    });
 
-    // Set up interval to check status
-    const interval = setInterval(checkConnectionStatus, 1000);
+    setConnectionStatus('connecting');
 
-    // Listen to socket events for real-time updates
-    const handleConnect = () => {
-      console.log('SocketProvider: Socket connected');
+    // Create socket with mobile-optimized configuration
+    const newSocket = io(API_URL, {
+      auth: { token },
+      transports: isMobile ? ['polling', 'websocket'] : ['websocket', 'polling'],
+      timeout: isMobile ? 20000 : 15000,
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: isMobile ? 2000 : 1000,
+      reconnectionDelayMax: isMobile ? 10000 : 5000,
+      randomizationFactor: 0.5,
+      autoConnect: true,
+      forceNew: true,
+      withCredentials: true,
+    });
+
+    // Connection event handlers
+    newSocket.on('connect', () => {
+      console.log('SocketProvider: Socket connected', {
+        socketId: newSocket.id,
+        transport: newSocket.io?.engine?.transport?.name,
+        isMobile
+      });
       setIsConnected(true);
       setConnectionStatus('connected');
       
       // Re-subscribe to previously subscribed leads
       subscribedLeadsRef.current.forEach(leadId => {
-        socketManager.emit('lead:subscribe', { leadId });
+        newSocket.emit('lead:subscribe', { leadId });
       });
-    };
+    });
 
-    const handleDisconnect = () => {
-      console.log('SocketProvider: Socket disconnected');
+    newSocket.on('disconnect', (reason) => {
+      console.log('SocketProvider: Socket disconnected', reason);
       setIsConnected(false);
       setConnectionStatus('disconnected');
-    };
+    });
 
-    const handleConnectError = () => {
-      console.log('SocketProvider: Socket connection error');
+    newSocket.on('connect_error', (error) => {
+      console.error('SocketProvider: Connection error', {
+        message: error.message,
+        description: error.description,
+        type: error.type,
+        isMobile
+      });
       setIsConnected(false);
       setConnectionStatus('error');
-    };
+    });
 
-    const handleReconnecting = () => {
-      console.log('SocketProvider: Socket reconnecting');
+    newSocket.on('reconnect_attempt', (attemptNumber) => {
+      console.log('SocketProvider: Reconnect attempt', attemptNumber);
       setConnectionStatus('connecting');
-    };
+    });
 
-    // Register event listeners
-    socketManager.on('connect', handleConnect);
-    socketManager.on('disconnect', handleDisconnect);
-    socketManager.on('connect_error', handleConnectError);
-    socketManager.on('reconnect_attempt', handleReconnecting);
+    newSocket.on('reconnect', (attemptNumber) => {
+      console.log('SocketProvider: Reconnected after', attemptNumber, 'attempts');
+      setIsConnected(true);
+      setConnectionStatus('connected');
+    });
 
-    return () => {
-      clearInterval(interval);
-      socketManager.off('connect', handleConnect);
-      socketManager.off('disconnect', handleDisconnect);
-      socketManager.off('connect_error', handleConnectError);
-      socketManager.off('reconnect_attempt', handleReconnecting);
-    };
-  }, []);
+    newSocket.on('reconnect_error', (error) => {
+      console.error('SocketProvider: Reconnect error', error);
+      setConnectionStatus('error');
+    });
+
+    newSocket.on('reconnect_failed', () => {
+      console.error('SocketProvider: Reconnect failed');
+      setConnectionStatus('error');
+    });
+
+    setSocket(newSocket);
+  }, [isAuthenticated, user, isMobile]);
+
+  // Initialize socket when authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      connectSocket();
+    } else {
+      if (socket) {
+        socket.disconnect();
+        setSocket(null);
+      }
+      setIsConnected(false);
+      setConnectionStatus('disconnected');
+      subscribedLeadsRef.current.clear();
+    }
+  }, [isAuthenticated, user, connectSocket]);
 
   // Manual reconnect function
   const reconnect = useCallback(() => {
     console.log('SocketProvider: Manual reconnection requested');
-    socketManager.reconnect();
-  }, []);
+    if (socket) {
+      socket.disconnect();
+    }
+    setSocket(null);
+    setIsConnected(false);
+    setConnectionStatus('disconnected');
+    
+    // Small delay before reconnecting
+    setTimeout(() => {
+      connectSocket();
+    }, 1000);
+  }, [socket, connectSocket]);
 
   // Subscribe to lead function
   const subscribeToLead = useCallback((leadId: string) => {
-    if (isConnected) {
-      socketManager.emit('lead:subscribe', { leadId });
+    if (socket && isConnected) {
+      socket.emit('lead:subscribe', { leadId });
       subscribedLeadsRef.current.add(leadId);
     }
-  }, [isConnected]);
+  }, [socket, isConnected]);
 
   // Unsubscribe from lead function
   const unsubscribeFromLead = useCallback((leadId: string) => {
-    if (isConnected) {
-      socketManager.emit('lead:unsubscribe', { leadId });
+    if (socket && isConnected) {
+      socket.emit('lead:unsubscribe', { leadId });
       subscribedLeadsRef.current.delete(leadId);
     }
-  }, [isConnected]);
+  }, [socket, isConnected]);
 
   const value = {
-    socket: socketManager, // Expose the socket manager instance
+    socket,
     isConnected,
     connectionStatus,
     reconnect,
