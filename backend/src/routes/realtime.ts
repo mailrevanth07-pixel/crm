@@ -58,7 +58,7 @@ router.get('/poll', authMiddleware, async (req: AuthenticatedRequest, res) => {
     try {
       const { redisService } = await import('../config/redis');
       const notificationData = await redisService.lrange(`notifications:${userId}`, 0, 19); // Get last 20 notifications
-      notifications.push(...notificationData.map((n: string) => JSON.parse(n)));
+      notifications.push(...notificationData.map((n: unknown) => JSON.parse(n as string)));
     } catch (error) {
       console.error('Error fetching notifications:', error);
     }

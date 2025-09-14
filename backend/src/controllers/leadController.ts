@@ -409,12 +409,14 @@ export class LeadController {
       const notificationService = NotificationService.getInstance();
       
       try {
-        await notificationService.notifyLeadAssigned(
-          updatedLead,
-          previousOwnerId,
-          req.user!,
-          owner
-        );
+        if (updatedLead) {
+          await notificationService.notifyLeadAssigned(
+            updatedLead,
+            previousOwnerId,
+            req.user!,
+            owner
+          );
+        }
       } catch (notificationError) {
         console.error('Failed to send lead assignment notification:', notificationError);
         // Don't fail the request if notification fails
