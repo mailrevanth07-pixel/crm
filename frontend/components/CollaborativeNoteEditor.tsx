@@ -84,7 +84,7 @@ const CollaborativeNoteEditor: React.FC<CollaborativeNoteEditorProps> = ({
 
         // Create WebSocket provider for real-time collaboration
         const provider = new WebsocketProvider(
-          process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3001',
+          process.env.NEXT_PUBLIC_WS_URL || 'wss://crm-19gz.onrender.com',
           `note-${noteId}`,
           ydoc
         );
