@@ -71,11 +71,15 @@ const corsOptions = {
       'http://localhost:3000',
       'https://localhost:3000',
       'http://127.0.0.1:3000',
-      'https://127.0.0.1:3000'
+      'https://127.0.0.1:3000',
+      'https://crm-ten-dusky.vercel.app' // Add Vercel URL
     ].filter(Boolean); // Remove undefined values
     
     // Check if origin is allowed
     if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else if (origin && origin.includes('.vercel.app')) {
+      // Allow all Vercel subdomains
       callback(null, true);
     } else {
       console.log('CORS blocked origin:', origin);

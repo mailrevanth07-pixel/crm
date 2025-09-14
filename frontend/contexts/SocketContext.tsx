@@ -64,16 +64,23 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     // Create socket with mobile-optimized configuration
     const newSocket = io(API_URL, {
       auth: { token },
-      transports: isMobile ? ['polling', 'websocket'] : ['websocket', 'polling'],
-      timeout: isMobile ? 20000 : 15000,
+      // Force polling for mobile to avoid WebSocket issues
+      transports: isMobile ? ['polling'] : ['polling', 'websocket'],
+      timeout: isMobile ? 30000 : 20000,
       reconnection: true,
       reconnectionAttempts: Infinity,
-      reconnectionDelay: isMobile ? 2000 : 1000,
-      reconnectionDelayMax: isMobile ? 10000 : 5000,
+      reconnectionDelay: isMobile ? 3000 : 2000,
+      reconnectionDelayMax: isMobile ? 15000 : 10000,
       randomizationFactor: 0.5,
       autoConnect: true,
       forceNew: true,
       withCredentials: true,
+      // Add mobile-specific options
+      upgrade: !isMobile, // Disable upgrade on mobile
+      rememberUpgrade: false, // Don't remember upgrade on mobile
+      // Add ping/pong settings for better connection stability
+      pingTimeout: isMobile ? 180000 : 120000, // 3 minutes for mobile, 2 minutes for desktop
+      pingInterval: isMobile ? 45000 : 30000, // 45 seconds for mobile, 30 seconds for desktop
     });
 
     // Connection event handlers
@@ -93,9 +100,24 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     });
 
     newSocket.on('disconnect', (reason) => {
-      console.log('SocketProvider: Socket disconnected', reason);
+      console.log('SocketProvider: Socket disconnected', {
+        reason,
+        isMobile,
+        transport: newSocket.io?.engine?.transport?.name
+      });
       setIsConnected(false);
       setConnectionStatus('disconnected');
+      
+      // For mobile, if it's a transport close, try to reconnect more aggressively
+      if (isMobile && reason === 'transport close') {
+        console.log('SocketProvider: Mobile transport close detected, scheduling aggressive reconnection');
+        setTimeout(() => {
+          if (!newSocket.connected) {
+            console.log('SocketProvider: Attempting reconnection after transport close');
+            newSocket.connect();
+          }
+        }, 2000);
+      }
     });
 
     newSocket.on('connect_error', (error) => {
@@ -130,6 +152,24 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
       setConnectionStatus('error');
     });
 
+    // Add connection health monitoring
+    newSocket.on('ping', () => {
+      console.log('SocketProvider: Ping received');
+    });
+
+    newSocket.on('pong', (latency) => {
+      console.log('SocketProvider: Pong received', { latency });
+    });
+
+    // Monitor connection state changes
+    newSocket.io?.engine?.on('upgrade', () => {
+      console.log('SocketProvider: Transport upgraded to', newSocket.io?.engine?.transport?.name);
+    });
+
+    newSocket.io?.engine?.on('upgradeError', (error) => {
+      console.error('SocketProvider: Upgrade error', error);
+    });
+
     setSocket(newSocket);
   }, [isAuthenticated, user, isMobile]);
 
@@ -158,11 +198,12 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     setIsConnected(false);
     setConnectionStatus('disconnected');
     
-    // Small delay before reconnecting
+    // For mobile, use longer delay and force polling
+    const delay = isMobile ? 3000 : 1000;
     setTimeout(() => {
       connectSocket();
-    }, 1000);
-  }, [socket, connectSocket]);
+    }, delay);
+  }, [socket, connectSocket, isMobile]);
 
   // Subscribe to lead function
   const subscribeToLead = useCallback((leadId: string) => {
