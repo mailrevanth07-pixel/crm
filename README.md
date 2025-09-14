@@ -1,45 +1,50 @@
-# CRM Application
+# CRM System
 
-A full-stack CRM application built with Next.js, Node.js, TypeScript, and PostgreSQL.
+A full-stack CRM (Customer Relationship Management) system built with Node.js, TypeScript, Next.js, and PostgreSQL.
 
 ## Features
 
-- **Frontend**: Next.js with TypeScript, Tailwind CSS
-- **Backend**: Node.js with Express, TypeScript, Sequelize ORM
-- **Database**: PostgreSQL with Redis for caching
-- **Real-time**: Socket.io for collaborative features
-- **Authentication**: JWT-based authentication with refresh tokens
-- **Testing**: Jest with comprehensive test coverage
-- **CI/CD**: GitHub Actions with automated testing and deployment
+- **Lead Management**: Create, update, and track sales leads
+- **User Management**: User authentication and authorization
+- **Activity Tracking**: Log and monitor customer interactions
+- **Real-time Collaboration**: WebSocket-based real-time features
+- **Dashboard**: Analytics and KPI tracking
+- **Responsive Design**: Modern UI with Tailwind CSS
 
-## Project Structure
+## Tech Stack
 
-```
-CRM/
-├── frontend/          # Next.js frontend application
-├── backend/           # Node.js backend API
-├── .github/           # GitHub Actions workflows
-└── docker-compose.*   # Docker configuration files
-```
+### Backend
+- Node.js with TypeScript
+- Express.js framework
+- PostgreSQL database
+- Sequelize ORM
+- Socket.io for real-time communication
+- JWT authentication
+- Redis for caching
 
-## Getting Started
+### Frontend
+- Next.js with TypeScript
+- React components
+- Tailwind CSS for styling
+- Socket.io client for real-time features
+- Context API for state management
+
+## Quick Start
 
 ### Prerequisites
-
 - Node.js 18+
-- PostgreSQL 15+
-- Redis 7+
-- Docker (optional)
+- PostgreSQL 12+
+- Redis (optional, for caching)
 
 ### Installation
 
 1. Clone the repository:
 ```bash
-git clone <your-repo-url>
-cd CRM
+git clone https://github.com/mailrevanth07-pixel/crm.git
+cd crm
 ```
 
-2. Install dependencies for both frontend and backend:
+2. Install dependencies:
 ```bash
 # Backend
 cd backend
@@ -52,126 +57,97 @@ npm install
 
 3. Set up environment variables:
 ```bash
-# Backend
-cp backend/.env.example backend/.env
-# Edit backend/.env with your database credentials
+# Backend - create .env file
+cp .env.example .env
+# Edit .env with your database and Redis configuration
 
-# Frontend
-cp frontend/.env.example frontend/.env.local
-# Edit frontend/.env.local with your API URL
+# Frontend - create .env.local file
+cp .env.local.example .env.local
+# Edit .env.local with your API endpoints
 ```
 
 4. Set up the database:
 ```bash
 cd backend
 npm run migrate
-npm run seed:run
+npm run seed
 ```
 
 5. Start the development servers:
 ```bash
-# Backend (Terminal 1)
-cd backend
+# Backend (from backend directory)
 npm run dev
 
-# Frontend (Terminal 2)
-cd frontend
+# Frontend (from frontend directory)
 npm run dev
 ```
 
-## Docker Setup
+## Docker Deployment
 
-### Development
+### Using Docker Compose
+
+1. Build and start all services:
 ```bash
-# Start all services
-docker-compose -f docker-compose.full.yml up --build
-
-# Or start individual services
 docker-compose up --build
 ```
 
-### Production
-```bash
-docker-compose -f docker-compose.prod.full.yml up --build
-```
+2. Access the application:
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:3001
 
-## Testing
+### Individual Services
 
-### Backend Tests
-```bash
-cd backend
-npm test
-npm run test:coverage
-```
-
-### Frontend Tests
-```bash
-cd frontend
-npm test
-npm run test:coverage
-```
-
-## Linting and Formatting
-
-### Backend
+#### Backend
 ```bash
 cd backend
-npm run lint
-npm run lint:fix
-npm run format
+docker build -t crm-backend .
+docker run -p 3001:3001 --env-file .env crm-backend
 ```
 
-### Frontend
+#### Frontend
 ```bash
 cd frontend
-npm run lint
+docker build -t crm-frontend .
+docker run -p 3000:3000 crm-frontend
 ```
 
-## CI/CD Pipeline
+## API Endpoints
 
-The project includes GitHub Actions workflows for:
-
-- **Linting**: ESLint and Prettier checks
-- **Testing**: Jest test suites for both frontend and backend
-- **Security**: Trivy vulnerability scanning
-- **Build**: Docker image building and pushing
-- **Deployment**: Automated deployment on main branch
-
-### Workflow Triggers
-
-- Push to `main` or `develop` branches
-- Pull requests to `main` or `develop` branches
-
-## API Documentation
-
-### Authentication Endpoints
-- `POST /api/auth/login` - User login
+### Authentication
 - `POST /api/auth/register` - User registration
-- `POST /api/auth/refresh` - Refresh access token
+- `POST /api/auth/login` - User login
+- `POST /api/auth/refresh` - Refresh token
 - `POST /api/auth/logout` - User logout
 
-### Leads Endpoints
+### Leads
 - `GET /api/leads` - Get all leads
 - `POST /api/leads` - Create new lead
+- `GET /api/leads/:id` - Get lead by ID
 - `PUT /api/leads/:id` - Update lead
 - `DELETE /api/leads/:id` - Delete lead
 
-### Activities Endpoints
+### Activities
 - `GET /api/activities` - Get all activities
 - `POST /api/activities` - Create new activity
+- `GET /api/activities/lead/:leadId` - Get activities for a lead
+
+### Users
+- `GET /api/users` - Get all users
+- `GET /api/users/:id` - Get user by ID
+- `PUT /api/users/:id` - Update user
 
 ## Environment Variables
 
 ### Backend (.env)
 ```
 NODE_ENV=development
+PORT=3001
 DB_HOST=localhost
 DB_PORT=5432
 DB_NAME=crm_db
-DB_USER=postgres
-DB_PASSWORD=your_password
+DB_USER=your_db_user
+DB_PASSWORD=your_db_password
 JWT_SECRET=your_jwt_secret
-JWT_REFRESH_SECRET=your_refresh_secret
 REDIS_URL=redis://localhost:6379
 ```
 
@@ -181,18 +157,35 @@ NEXT_PUBLIC_API_URL=http://localhost:3001
 NEXT_PUBLIC_WS_URL=http://localhost:3001
 ```
 
-## Contributing
+## Database Schema
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+The system uses the following main entities:
+- **Users**: User accounts and authentication
+- **Leads**: Sales leads and prospects
+- **Activities**: Customer interactions and notes
+- **RefreshTokens**: JWT refresh token management
+- **CollaborativeNotes**: Real-time collaborative notes
+- **UserPresence**: Online user tracking
+
+## Development
+
+### Backend Development
+```bash
+cd backend
+npm run dev          # Start development server
+npm run build        # Build TypeScript
+npm run migrate      # Run database migrations
+npm run seed         # Seed database with sample data
+```
+
+### Frontend Development
+```bash
+cd frontend
+npm run dev          # Start development server
+npm run build        # Build for production
+npm run start        # Start production server
+```
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Support
-
-For support, email support@example.com or create an issue in the repository.
+MIT License
