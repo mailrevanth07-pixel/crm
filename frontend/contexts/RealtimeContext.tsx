@@ -126,9 +126,12 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
 
   // Initialize realtime when authenticated
   useEffect(() => {
+    console.log('RealtimeProvider: Auth state changed', { isAuthenticated, user: user?.email });
     if (isAuthenticated && user) {
+      console.log('RealtimeProvider: Starting realtime service');
       startRealtime();
     } else {
+      console.log('RealtimeProvider: Stopping realtime service');
       stopRealtime();
     }
   }, [isAuthenticated, user, startRealtime, stopRealtime]);

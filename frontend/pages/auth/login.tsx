@@ -108,10 +108,12 @@ export default function Login() {
       const { user, accessToken, refreshToken } = response.data.data;
       
       // Store tokens and user data with remember me preference
+      console.log('Login page: Calling login function');
       login(user, { accessToken, refreshToken }, formData.rememberMe);
       
       // Redirect to dashboard or intended page
       const redirectTo = router.query.redirect as string || '/';
+      console.log('Login page: Redirecting to', redirectTo);
       router.push(redirectTo);
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || 'Login failed. Please try again.';

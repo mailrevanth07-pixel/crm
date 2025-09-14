@@ -59,10 +59,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = (userData: User, tokens: { accessToken: string; refreshToken: string }, rememberMe: boolean = false) => {
     try {
+      console.log('AuthContext: Login called', { user: userData.email, rememberMe });
       // Store tokens and user data with remember me preference
       auth.setTokens(tokens, rememberMe);
       auth.setUser(userData, rememberMe);
       setUser(userData);
+      console.log('AuthContext: User set, isAuthenticated will be:', !isLoading && !!userData && !!auth.getAccessToken());
     } catch (error) {
       console.error('Error during login:', error);
       throw error;
