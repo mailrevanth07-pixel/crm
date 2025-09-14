@@ -187,18 +187,44 @@ async function startServer() {
     // Initialize Redis connection
     try {
       await redisService.connect();
+      console.log('✅ Redis connected, initializing job queues...');
       // Initialize job queue and schedule recurring jobs
-      jobQueueService.scheduleRecurringJobs();
+      try {
+        jobQueueService.scheduleRecurringJobs();
+        console.log('✅ Job queues initialized successfully');
+      } catch (jobQueueError) {
+        console.warn('⚠️  Job queue initialization failed:', jobQueueError);
+      }
     } catch (redisError) {
       console.warn('⚠️  Redis connection failed, continuing without Redis:', redisError);
     }
 
     // Initialize database connection
-    await sequelize.authenticate();
+    console.log('🔄 Connecting to database...');
+    console.log('Database URL:', process.env.DATABASE_URL ? 'Set' : 'Not set');
+    try {
+      await sequelize.authenticate();
+      console.log('✅ Database connected successfully');
+    } catch (dbError) {
+      console.error('❌ Database connection failed:', dbError);
+      console.error('Database URL being used:', process.env.DATABASE_URL);
+      throw dbError;
+    }
     
     server.listen(PORT, () => {
       logger.info(`🚀 Server is running on port ${PORT}`);
       logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    });
+
+    server.on('error', (error: any) => {
+      if (error.code === 'EADDRINUSE') {
+        logger.error(`❌ Port ${PORT} is already in use. Please kill the process using this port or use a different port.`);
+        logger.error(`To find and kill the process: netstat -ano | findstr :${PORT}`);
+        process.exit(1);
+      } else {
+        logger.error('Server error:', error);
+        process.exit(1);
+      }
     });
   } catch (error) {
     logger.error('❌ Unable to start server:', error);

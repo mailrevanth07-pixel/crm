@@ -14,13 +14,36 @@ export class JobQueueService {
   private constructor() {
     const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
     
-    // Initialize job queues
-    this.notificationQueue = new Bull('notification-queue', redisUrl);
-    this.emailQueue = new Bull('email-queue', redisUrl);
-    this.cleanupQueue = new Bull('cleanup-queue', redisUrl);
+    try {
+      // Initialize job queues with error handling
+      this.notificationQueue = new Bull('notification-queue', redisUrl, {
+        redis: {
+          connectTimeout: 10000,
+          lazyConnect: true,
+          maxRetriesPerRequest: 3
+        }
+      });
+      this.emailQueue = new Bull('email-queue', redisUrl, {
+        redis: {
+          connectTimeout: 10000,
+          lazyConnect: true,
+          maxRetriesPerRequest: 3
+        }
+      });
+      this.cleanupQueue = new Bull('cleanup-queue', redisUrl, {
+        redis: {
+          connectTimeout: 10000,
+          lazyConnect: true,
+          maxRetriesPerRequest: 3
+        }
+      });
 
-    this.setupJobProcessors();
-    this.setupJobEvents();
+      this.setupJobProcessors();
+      this.setupJobEvents();
+    } catch (error) {
+      console.error('Failed to initialize job queues:', error);
+      throw error;
+    }
   }
 
   public static getInstance(): JobQueueService {

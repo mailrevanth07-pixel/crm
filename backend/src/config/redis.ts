@@ -13,9 +13,28 @@ export class RedisService {
     
     // Only create Redis clients if REDIS_URL is provided
     if (process.env.REDIS_URL) {
-      this.client = createClient({ url: redisUrl });
-      this.subscriber = createClient({ url: redisUrl });
-      this.publisher = createClient({ url: redisUrl });
+      // Enhanced configuration for Redis Cloud
+      const redisConfig = {
+        url: redisUrl,
+        socket: {
+          connectTimeout: 10000,
+          lazyConnect: true,
+          reconnectStrategy: (retries: number) => {
+            if (retries > 10) {
+              console.error('Redis connection failed after 10 retries');
+              return new Error('Redis connection failed');
+            }
+            return Math.min(retries * 100, 3000);
+          }
+        },
+        retryDelayOnFailover: 100,
+        enableReadyCheck: false,
+        maxRetriesPerRequest: 3
+      };
+
+      this.client = createClient(redisConfig);
+      this.subscriber = createClient(redisConfig);
+      this.publisher = createClient(redisConfig);
       this.setupEventHandlers();
     } else {
       console.warn('⚠️  REDIS_URL not provided, Redis features will be disabled');
@@ -65,13 +84,15 @@ export class RedisService {
     }
     
     try {
+      console.log('🔄 Connecting to Redis Cloud...');
       await Promise.all([
         this.client.connect(),
         this.subscriber.connect(),
         this.publisher.connect()
       ]);
+      console.log('✅ Successfully connected to Redis Cloud');
     } catch (error) {
-      console.error('Failed to connect to Redis:', error);
+      console.error('❌ Failed to connect to Redis Cloud:', error);
       throw error;
     }
   }

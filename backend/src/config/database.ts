@@ -11,24 +11,86 @@ const dbName = process.env.DB_NAME || 'crm_db';
 const dbUser = process.env.DB_USER || 'postgres';
 const dbPassword = process.env.DB_PASSWORD || 'password';
 
-// Create database configuration
-const dbConfig = databaseUrl ? {
-  url: databaseUrl,
-  dialect: 'postgres' as const,
-  logging: false,
+// Parse database URL if available
+interface DatabaseConfig {
+  url?: string;
+  host?: string;
+  port?: number;
+  database?: string;
+  username?: string;
+  password?: string;
+  dialect: 'postgres';
+  logging: boolean;
   pool: {
-    max: 5,
-    min: 0,
-    acquire: 30000,
-    idle: 10000,
-  },
+    max: number;
+    min: number;
+    acquire: number;
+    idle: number;
+  };
   dialectOptions: {
-    ssl: databaseUrl.includes('render.com') ? {
-      require: true,
-      rejectUnauthorized: false
-    } : false
-  },
-} : {
+    ssl: boolean | { require: boolean; rejectUnauthorized: boolean };
+    connectTimeout: number;
+    acquireTimeout: number;
+    timeout: number;
+  };
+}
+
+let parsedConfig: Partial<DatabaseConfig> = {};
+if (databaseUrl) {
+  try {
+    const url = new URL(databaseUrl);
+    parsedConfig = {
+      host: url.hostname,
+      port: parseInt(url.port) || 5432,
+      database: url.pathname.substring(1), // Remove leading slash
+      username: url.username,
+      password: url.password,
+      dialect: 'postgres' as const,
+      logging: false,
+      pool: {
+        max: 5,
+        min: 0,
+        acquire: 30000,
+        idle: 10000,
+      },
+      dialectOptions: {
+        ssl: databaseUrl.includes('render.com') ? {
+          require: true,
+          rejectUnauthorized: false
+        } : false,
+        connectTimeout: 10000,
+        acquireTimeout: 10000,
+        timeout: 10000
+      }
+    };
+  } catch (error) {
+    console.error('Error parsing database URL:', error);
+    // Fallback to URL method
+    parsedConfig = {
+      url: databaseUrl,
+      dialect: 'postgres' as const,
+      logging: false,
+      pool: {
+        max: 5,
+        min: 0,
+        acquire: 30000,
+        idle: 10000,
+      },
+      dialectOptions: {
+        ssl: databaseUrl.includes('render.com') ? {
+          require: true,
+          rejectUnauthorized: false
+        } : false,
+        connectTimeout: 10000,
+        acquireTimeout: 10000,
+        timeout: 10000
+      }
+    };
+  }
+}
+
+// Create database configuration
+const dbConfig: DatabaseConfig = databaseUrl ? parsedConfig as DatabaseConfig : {
   host: dbHost,
   port: parseInt(dbPort),
   database: dbName,
@@ -43,9 +105,26 @@ const dbConfig = databaseUrl ? {
     idle: 10000,
   },
   dialectOptions: {
-    ssl: false
+    ssl: false,
+    connectTimeout: 10000,
+    acquireTimeout: 10000,
+    timeout: 10000
   },
 };
+
+// Debug: Log the configuration being used
+console.log('Database configuration:', {
+  hasUrl: !!databaseUrl,
+  urlLength: databaseUrl?.length || 0,
+  isRender: databaseUrl?.includes('render.com') || false,
+  parsedConfig: databaseUrl ? {
+    host: parsedConfig.host || 'undefined',
+    port: parsedConfig.port || 'undefined',
+    database: parsedConfig.database || 'undefined',
+    username: parsedConfig.username || 'undefined',
+    hasPassword: !!parsedConfig.password
+  } : 'Using fallback config'
+});
 
 const sequelize = new Sequelize(dbConfig);
 

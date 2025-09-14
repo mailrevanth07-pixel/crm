@@ -105,11 +105,14 @@ export const notFound = (req: Request, res: Response, next: NextFunction): void 
 
 // Unhandled promise rejection handler
 export const handleUnhandledRejection = (): void => {
-  process.on('unhandledRejection', (err: Error) => {
+  process.on('unhandledRejection', (err: Error, promise: Promise<any>) => {
     logger.error('Unhandled Promise Rejection', {
       error: err.message,
       stack: err.stack,
+      promise: promise,
+      timestamp: new Date().toISOString()
     });
+    console.error('Unhandled Promise Rejection:', err);
     process.exit(1);
   });
 };
@@ -120,7 +123,9 @@ export const handleUncaughtException = (): void => {
     logger.error('Uncaught Exception', {
       error: err.message,
       stack: err.stack,
+      timestamp: new Date().toISOString()
     });
+    console.error('Uncaught Exception:', err);
     process.exit(1);
   });
 };
