@@ -25,13 +25,16 @@ export class SocketHandler {
     };
 
     // Add Redis adapter if Redis is available
-    if (redisService.isRedisConnected()) {
+    const redisAdapter = redisService.getSocketIOAdapter();
+    if (redisAdapter) {
       try {
-        ioConfig.adapter = redisService.getSocketIOAdapter();
+        ioConfig.adapter = redisAdapter;
+        console.log('✅ Redis adapter configured for Socket.IO');
       } catch (error) {
         console.warn('Failed to configure Redis adapter, using default:', error);
       }
     } else {
+      console.log('⚠️  Redis not available, using default Socket.IO adapter');
     }
 
     this.io = new SocketIOServer(server, ioConfig);

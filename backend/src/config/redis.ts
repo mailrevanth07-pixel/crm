@@ -3,19 +3,23 @@ import { createAdapter } from '@socket.io/redis-adapter';
 
 export class RedisService {
   private static instance: RedisService;
-  private client: RedisClientType;
-  private subscriber: RedisClientType;
-  private publisher: RedisClientType;
+  private client?: RedisClientType;
+  private subscriber?: RedisClientType;
+  private publisher?: RedisClientType;
   private isConnected: boolean = false;
 
   private constructor() {
     const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
     
-    this.client = createClient({ url: redisUrl });
-    this.subscriber = createClient({ url: redisUrl });
-    this.publisher = createClient({ url: redisUrl });
-
-    this.setupEventHandlers();
+    // Only create Redis clients if REDIS_URL is provided
+    if (process.env.REDIS_URL) {
+      this.client = createClient({ url: redisUrl });
+      this.subscriber = createClient({ url: redisUrl });
+      this.publisher = createClient({ url: redisUrl });
+      this.setupEventHandlers();
+    } else {
+      console.warn('⚠️  REDIS_URL not provided, Redis features will be disabled');
+    }
   }
 
   public static getInstance(): RedisService {
@@ -26,29 +30,40 @@ export class RedisService {
   }
 
   private setupEventHandlers(): void {
-    this.client.on('error', (err) => {
-      console.error('Redis Client Error:', err);
-      this.isConnected = false;
-    });
+    if (this.client) {
+      this.client.on('error', (err) => {
+        console.error('Redis Client Error:', err);
+        this.isConnected = false;
+      });
 
-    this.client.on('connect', () => {
-      this.isConnected = true;
-    });
+      this.client.on('connect', () => {
+        this.isConnected = true;
+      });
 
-    this.client.on('disconnect', () => {
-      this.isConnected = false;
-    });
+      this.client.on('disconnect', () => {
+        this.isConnected = false;
+      });
+    }
 
-    this.subscriber.on('error', (err) => {
-      console.error('Redis Subscriber Error:', err);
-    });
+    if (this.subscriber) {
+      this.subscriber.on('error', (err) => {
+        console.error('Redis Subscriber Error:', err);
+      });
+    }
 
-    this.publisher.on('error', (err) => {
-      console.error('Redis Publisher Error:', err);
-    });
+    if (this.publisher) {
+      this.publisher.on('error', (err) => {
+        console.error('Redis Publisher Error:', err);
+      });
+    }
   }
 
   public async connect(): Promise<void> {
+    if (!this.client || !this.subscriber || !this.publisher) {
+      console.warn('⚠️  Redis clients not initialized, skipping connection');
+      return;
+    }
+    
     try {
       await Promise.all([
         this.client.connect(),
@@ -62,6 +77,10 @@ export class RedisService {
   }
 
   public async disconnect(): Promise<void> {
+    if (!this.client || !this.subscriber || !this.publisher) {
+      return;
+    }
+    
     try {
       await Promise.all([
         this.client.disconnect(),
@@ -73,19 +92,22 @@ export class RedisService {
     }
   }
 
-  public getClient(): RedisClientType {
-    return this.client;
+  public getClient(): RedisClientType | null {
+    return this.client || null;
   }
 
-  public getSubscriber(): RedisClientType {
-    return this.subscriber;
+  public getSubscriber(): RedisClientType | null {
+    return this.subscriber || null;
   }
 
-  public getPublisher(): RedisClientType {
-    return this.publisher;
+  public getPublisher(): RedisClientType | null {
+    return this.publisher || null;
   }
 
   public getSocketIOAdapter() {
+    if (!this.subscriber || !this.publisher) {
+      return null;
+    }
     return createAdapter(this.subscriber, this.publisher);
   }
 
@@ -95,6 +117,11 @@ export class RedisService {
 
   // Cache operations
   public async set(key: string, value: any, ttl?: number): Promise<void> {
+    if (!this.client) {
+      console.warn('⚠️  Redis not available, skipping SET operation');
+      return;
+    }
+    
     try {
       const serializedValue = JSON.stringify(value);
       if (ttl) {
@@ -109,6 +136,11 @@ export class RedisService {
   }
 
   public async get<T>(key: string): Promise<T | null> {
+    if (!this.client) {
+      console.warn('⚠️  Redis not available, returning null for GET operation');
+      return null;
+    }
+    
     try {
       const value = await this.client.get(key);
       return value ? JSON.parse(value) : null;
@@ -119,6 +151,11 @@ export class RedisService {
   }
 
   public async del(key: string): Promise<void> {
+    if (!this.client) {
+      console.warn('⚠️  Redis not available, skipping DEL operation');
+      return;
+    }
+    
     try {
       await this.client.del(key);
     } catch (error) {
@@ -128,6 +165,11 @@ export class RedisService {
   }
 
   public async exists(key: string): Promise<boolean> {
+    if (!this.client) {
+      console.warn('⚠️  Redis not available, returning false for EXISTS operation');
+      return false;
+    }
+    
     try {
       const result = await this.client.exists(key);
       return result === 1;
@@ -139,6 +181,11 @@ export class RedisService {
 
   // Pub/Sub operations
   public async publish(channel: string, message: any): Promise<void> {
+    if (!this.publisher) {
+      console.warn('⚠️  Redis not available, skipping PUBLISH operation');
+      return;
+    }
+    
     try {
       const serializedMessage = JSON.stringify(message);
       await this.publisher.publish(channel, serializedMessage);
@@ -149,6 +196,11 @@ export class RedisService {
   }
 
   public async subscribe(channel: string, callback: (message: any) => void): Promise<void> {
+    if (!this.subscriber) {
+      console.warn('⚠️  Redis not available, skipping SUBSCRIBE operation');
+      return;
+    }
+    
     try {
       await this.subscriber.subscribe(channel, (message) => {
         try {
@@ -165,6 +217,11 @@ export class RedisService {
   }
 
   public async unsubscribe(channel: string): Promise<void> {
+    if (!this.subscriber) {
+      console.warn('⚠️  Redis not available, skipping UNSUBSCRIBE operation');
+      return;
+    }
+    
     try {
       await this.subscriber.unsubscribe(channel);
     } catch (error) {
@@ -175,6 +232,11 @@ export class RedisService {
 
   // Hash operations for collaborative features
   public async hset(key: string, field: string, value: any): Promise<void> {
+    if (!this.client) {
+      console.warn('⚠️  Redis not available, skipping HSET operation');
+      return;
+    }
+    
     try {
       const serializedValue = JSON.stringify(value);
       await this.client.hSet(key, field, serializedValue);
@@ -185,6 +247,11 @@ export class RedisService {
   }
 
   public async hget<T>(key: string, field: string): Promise<T | null> {
+    if (!this.client) {
+      console.warn('⚠️  Redis not available, returning null for HGET operation');
+      return null;
+    }
+    
     try {
       const value = await this.client.hGet(key, field);
       return value ? JSON.parse(value) : null;
@@ -195,6 +262,11 @@ export class RedisService {
   }
 
   public async hgetall<T>(key: string): Promise<Record<string, T>> {
+    if (!this.client) {
+      console.warn('⚠️  Redis not available, returning empty object for HGETALL operation');
+      return {};
+    }
+    
     try {
       const hash = await this.client.hGetAll(key);
       const result: Record<string, T> = {};
@@ -209,6 +281,11 @@ export class RedisService {
   }
 
   public async hdel(key: string, field: string): Promise<void> {
+    if (!this.client) {
+      console.warn('⚠️  Redis not available, skipping HDEL operation');
+      return;
+    }
+    
     try {
       await this.client.hDel(key, field);
     } catch (error) {
@@ -219,6 +296,11 @@ export class RedisService {
 
   // List operations for activity streams
   public async lpush(key: string, value: any): Promise<void> {
+    if (!this.client) {
+      console.warn('⚠️  Redis not available, skipping LPUSH operation');
+      return;
+    }
+    
     try {
       const serializedValue = JSON.stringify(value);
       await this.client.lPush(key, serializedValue);
@@ -229,6 +311,11 @@ export class RedisService {
   }
 
   public async rpop<T>(key: string): Promise<T | null> {
+    if (!this.client) {
+      console.warn('⚠️  Redis not available, returning null for RPOP operation');
+      return null;
+    }
+    
     try {
       const value = await this.client.rPop(key);
       return value ? JSON.parse(value) : null;
@@ -239,6 +326,11 @@ export class RedisService {
   }
 
   public async lrange<T>(key: string, start: number, stop: number): Promise<T[]> {
+    if (!this.client) {
+      console.warn('⚠️  Redis not available, returning empty array for LRANGE operation');
+      return [];
+    }
+    
     try {
       const values = await this.client.lRange(key, start, stop);
       return values.map(value => JSON.parse(value));
