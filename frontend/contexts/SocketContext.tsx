@@ -34,8 +34,15 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
   // Initialize socket manager when authenticated
   useEffect(() => {
     if (isAuthenticated && user) {
-      console.log('SocketProvider: Initializing socket manager for authenticated user');
-      socketManager.init();
+      console.log('SocketProvider: Initializing socket manager for authenticated user', {
+        userEmail: user.email,
+        isAuthenticated
+      });
+      
+      // Small delay to ensure auth context is fully loaded
+      setTimeout(() => {
+        socketManager.init();
+      }, 100);
     } else {
       console.log('SocketProvider: User not authenticated, destroying socket manager');
       socketManager.destroy();

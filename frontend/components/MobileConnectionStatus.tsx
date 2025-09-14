@@ -112,6 +112,16 @@ export default function MobileConnectionStatus({ className = '' }: MobileConnect
                 </button>
                 <button
                   onClick={() => {
+                    if (socket) {
+                      socket.forceConnect();
+                    }
+                  }}
+                  className="w-full px-2 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600 transition-colors"
+                >
+                  Force Connect
+                </button>
+                <button
+                  onClick={() => {
                     // Force page reload to reinitialize everything
                     window.location.reload();
                   }}

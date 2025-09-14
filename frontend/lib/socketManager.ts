@@ -69,11 +69,21 @@ class SocketManager {
   }
 
   public init(): void {
-    if (this.socket || this.connecting) return;
+    if (this.socket || this.connecting) {
+      console.log('SocketManager: Already initializing or initialized');
+      return;
+    }
+    
+    const token = this.getAuthToken();
+    if (!token) {
+      console.error('SocketManager: No auth token available');
+      return;
+    }
     
     console.log('SocketManager: Initializing socket connection...', {
       url: this.url,
-      hasToken: !!this.getAuthToken()
+      hasToken: !!token,
+      isMobile: this.detectMobile()
     });
     
     this.connecting = true;
@@ -101,7 +111,12 @@ class SocketManager {
     });
 
     this.socket.on('connect_error', (err) => {
-      console.warn('SocketManager: connect_error', err.message);
+      console.error('SocketManager: connect_error', {
+        message: err.message,
+        description: err.description,
+        context: err.context,
+        type: err.type
+      });
       this.connecting = false;
       // Keep trying: socket.io handles reconnection automatically
     });
@@ -292,7 +307,30 @@ class SocketManager {
     }
     this.connected = false;
     this.connecting = false;
+    
+    // Ensure we have a token before reconnecting
+    const token = this.getAuthToken();
+    if (!token) {
+      console.error('SocketManager: Cannot reconnect - no auth token');
+      return;
+    }
+    
     this.init();
+  }
+
+  // Force connection (for debugging)
+  public forceConnect(): void {
+    console.log('SocketManager: Force connection requested');
+    if (this.socket && this.socket.connected) {
+      console.log('SocketManager: Already connected');
+      return;
+    }
+    
+    if (!this.socket) {
+      this.init();
+    } else {
+      this.socket.connect();
+    }
   }
 
   // Call this to gracefully destroy event listeners
