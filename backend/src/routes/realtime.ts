@@ -1,12 +1,12 @@
 import express from 'express';
-import { authenticateToken } from '../middleware/auth';
+import { authMiddleware, AuthenticatedRequest } from '../middleware/auth';
 import { Activity, User } from '../models';
 import { Op } from 'sequelize';
 
 const router = express.Router();
 
 // Polling endpoint for real-time updates
-router.get('/poll', authenticateToken, async (req: any, res) => {
+router.get('/poll', authMiddleware, async (req: AuthenticatedRequest, res) => {
   try {
     const userId = req.user.id;
     const lastPollTime = req.query.lastPollTime ? new Date(req.query.lastPollTime as string) : new Date(Date.now() - 60000); // Default to 1 minute ago
@@ -27,7 +27,7 @@ router.get('/poll', authenticateToken, async (req: any, res) => {
       include: [
         {
           model: User,
-          as: 'user',
+          as: 'creator',
           attributes: ['id', 'name', 'email']
         }
       ],
@@ -38,16 +38,16 @@ router.get('/poll', authenticateToken, async (req: any, res) => {
     // Get online users (simplified - in real implementation, you'd track this)
     const onlineUsers = await User.findAll({
       where: {
-        lastActiveAt: {
+        updatedAt: {
           [Op.gte]: new Date(Date.now() - 300000) // Active in last 5 minutes
         }
       },
-      attributes: ['id', 'name', 'email', 'lastActiveAt'],
+      attributes: ['id', 'name', 'email', 'updatedAt'],
       limit: 100
     });
 
     // Get notifications (you can implement a proper notification system)
-    const notifications = []; // Placeholder for notifications
+    const notifications: any[] = []; // Placeholder for notifications
 
     const response = {
       success: true,
@@ -56,12 +56,12 @@ router.get('/poll', authenticateToken, async (req: any, res) => {
         activities: activities.map(activity => ({
           id: activity.id,
           type: activity.type,
-          description: activity.description,
+          body: activity.body,
           createdAt: activity.createdAt,
-          user: activity.user ? {
-            id: activity.user.id,
-            name: activity.user.name,
-            email: activity.user.email
+          user: (activity as any).creator ? {
+            id: (activity as any).creator.id,
+            name: (activity as any).creator.name,
+            email: (activity as any).creator.email
           } : null
         })),
         presence: {
@@ -69,7 +69,7 @@ router.get('/poll', authenticateToken, async (req: any, res) => {
             id: user.id,
             name: user.name,
             email: user.email,
-            lastActiveAt: user.lastActiveAt
+            lastActiveAt: user.updatedAt
           })),
           totalOnline: onlineUsers.length
         },
