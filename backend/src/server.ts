@@ -56,6 +56,26 @@ app.use(securityHeaders);
 // Request logging
 app.use(requestLogger);
 
+// Global CORS handler - runs first
+app.use((req, res, next) => {
+  console.log('Global CORS handler:', { origin: req.get('Origin'), method: req.method });
+  
+  // Set CORS headers for all responses
+  res.header('Access-Control-Allow-Origin', req.get('Origin') || '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, Pragma');
+  
+  // Handle preflight requests immediately
+  if (req.method === 'OPTIONS') {
+    console.log('Global CORS: Handling OPTIONS preflight');
+    res.status(200).end();
+    return;
+  }
+  
+  next();
+});
+
 // Rate limiting
 app.use(generalLimiter);
 app.use(speedLimiter);
@@ -85,15 +105,14 @@ app.use((req, res, next) => {
   const origin = req.get('Origin');
   console.log('Additional CORS middleware:', { origin, method: req.method });
   
-  // Allow all origins for now
-  if (origin) {
-    res.header('Access-Control-Allow-Origin', origin);
-    res.header('Access-Control-Allow-Credentials', 'true');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, Pragma');
-  }
+  // Always set CORS headers for all requests
+  res.header('Access-Control-Allow-Origin', origin || '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, Pragma');
   
   if (req.method === 'OPTIONS') {
+    console.log('Handling OPTIONS preflight request');
     res.status(200).end();
     return;
   }
