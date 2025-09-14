@@ -7,8 +7,15 @@ const router = express.Router();
 
 // Polling endpoint for real-time updates
 router.get('/poll', authMiddleware, async (req: AuthenticatedRequest, res) => {
+  console.log('Realtime poll endpoint hit', {
+    hasUser: !!req.user,
+    userId: req.user?.id,
+    headers: req.headers.authorization ? 'Present' : 'Missing'
+  });
+
   try {
     if (!req.user) {
+      console.log('Realtime poll: User not authenticated');
       return res.status(401).json({
         success: false,
         error: 'User not authenticated'

@@ -76,13 +76,25 @@ class RealtimeService {
   private startPolling() {
     if (!this.isRunning) return;
 
+    console.log('RealtimeService: Starting polling interval', {
+      pollInterval: this.config.pollInterval,
+      isRunning: this.isRunning
+    });
+
     this.pollInterval = setInterval(() => {
+      console.log('RealtimeService: Polling interval triggered');
       this.pollForUpdates();
     }, this.config.pollInterval);
   }
 
   private async pollForUpdates() {
     if (!this.isRunning) return;
+
+    console.log('RealtimeService: Starting poll request', {
+      url: `${this.config.apiUrl}/api/realtime/poll`,
+      isRunning: this.isRunning,
+      retryCount: this.retryCount
+    });
 
     try {
       // Create new abort controller for this request
@@ -99,11 +111,18 @@ class RealtimeService {
         signal: this.abortController.signal
       });
 
+      console.log('RealtimeService: Poll response received', {
+        status: response.status,
+        ok: response.ok,
+        statusText: response.statusText
+      });
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
+      console.log('RealtimeService: Poll data received', data);
       this.handlePollResponse(data);
       this.retryCount = 0; // Reset retry count on success
 
