@@ -47,11 +47,8 @@ export default function MobileConnectionStatus({ className = '' }: MobileConnect
   const getConnectionDetails = () => {
     if (!socket) return 'Socket not initialized - Check authentication';
     
-    const transport = socket.io?.engine?.transport?.name || 'unknown';
-    const readyState = socket.io?.engine?.readyState || 'unknown';
-    const connected = socket.connected || false;
-    
-    return `Transport: ${transport} | State: ${readyState} | Connected: ${connected}`;
+    const status = socket.getConnectionStatus();
+    return `Transport: ${status.transport || 'unknown'} | Connected: ${status.connected} | Queue: ${status.queueLength}`;
   };
 
   return (
@@ -82,10 +79,10 @@ export default function MobileConnectionStatus({ className = '' }: MobileConnect
               {getConnectionDetails()}
             </div>
             <div className="text-xs text-gray-600">
-              Socket ID: {socket?.id || 'Not connected'}
+              Socket ID: {socket?.getConnectionStatus()?.socketId || 'Not connected'}
             </div>
             <div className="text-xs text-gray-600">
-              Mobile: {isMobile ? 'Yes' : 'No'}
+              Mobile: {socket?.getConnectionStatus()?.isMobile ? 'Yes' : 'No'}
             </div>
             <div className="text-xs text-gray-600">
               Auth: {isAuthenticated ? 'Yes' : 'No'}
@@ -96,6 +93,9 @@ export default function MobileConnectionStatus({ className = '' }: MobileConnect
             <div className="text-xs text-gray-600">
               API URL: {process.env.NEXT_PUBLIC_API_URL || 'Default'}
             </div>
+            <div className="text-xs text-gray-600">
+              User Agent: {socket?.getConnectionStatus()?.userAgent?.slice(0, 30) || 'Unknown'}...
+            </div>
             
             {/* Reconnect Button */}
             {!isConnected && (
@@ -103,7 +103,7 @@ export default function MobileConnectionStatus({ className = '' }: MobileConnect
                 <button
                   onClick={() => {
                     if (socket) {
-                      socket.connect();
+                      socket.reconnect();
                     }
                   }}
                   className="w-full px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition-colors"
