@@ -1,17 +1,17 @@
 import '../styles/globals.css';
 import type { AppProps } from 'next/app';
 import { AuthProvider } from '../contexts/AuthContext';
-import { SocketProvider } from '../contexts/SocketContext';
+import { RealtimeProvider } from '../contexts/RealtimeContext';
 import MobileNotificationHandler from '../components/MobileNotificationHandler';
 
 export default function App({ Component, pageProps }: AppProps) {
   return (
     <AuthProvider>
-      <SocketProvider>
+      <RealtimeProvider>
         <MobileNotificationHandler>
           <Component {...pageProps} />
         </MobileNotificationHandler>
-      </SocketProvider>
+      </RealtimeProvider>
     </AuthProvider>
   );
 }

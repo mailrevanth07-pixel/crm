@@ -8,6 +8,7 @@ import userRoutes from './routes/users';
 import leadRoutes from './routes/leads';
 import activityRoutes from './routes/activities';
 import collaborativeNotesRoutes from './routes/collaborativeNotes';
+import realtimeRoutes from './routes/realtime';
 import { authMiddleware, roleGuard, AuthenticatedRequest } from './middleware/auth';
 import { SocketHandler } from './socket/socketHandler';
 import { redisService } from './config/redis';
@@ -205,6 +206,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/leads', leadRoutes);
 app.use('/api/activities', activityRoutes);
 app.use('/api/collaborative-notes', collaborativeNotesRoutes);
+app.use('/api/realtime', realtimeRoutes);
 
 // Protected route example
 app.get('/api/protected', authMiddleware, (req: AuthenticatedRequest, res) => {

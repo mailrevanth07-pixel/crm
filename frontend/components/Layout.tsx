@@ -7,9 +7,7 @@ import RealtimeNotifications from './RealtimeNotifications';
 import RealtimeActivityStream from './RealtimeActivityStream';
 import ConnectionStatus from './ConnectionStatus';
 import OnlineUsers from './OnlineUsers';
-import MobileConnectionStatus from './MobileConnectionStatus';
-import SocketDebugInfo from './SocketDebugInfo';
-import ConnectionTester from './ConnectionTester';
+import MobileRealtimeStatus from './MobileRealtimeStatus';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -229,9 +227,7 @@ export default function Layout({ children }: LayoutProps) {
         {/* Real-time Components */}
         <RealtimeNotifications />
         <RealtimeActivityStream />
-        <MobileConnectionStatus />
-        <SocketDebugInfo />
-        <ConnectionTester />
+        <MobileRealtimeStatus />
       </div>
     </>
   );
