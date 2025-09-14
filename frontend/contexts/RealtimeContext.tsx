@@ -41,6 +41,13 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
   }, []);
 
   const startRealtime = useCallback(() => {
+    console.log('RealtimeProvider: startRealtime called', {
+      isAuthenticated,
+      hasUser: !!user,
+      userEmail: user?.email,
+      hasExistingService: !!realtimeService
+    });
+
     if (!isAuthenticated || !user) {
       console.log('RealtimeProvider: Not authenticated, skipping realtime start');
       return;
@@ -51,6 +58,13 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
       console.error('RealtimeProvider: No access token available');
       setConnectionStatus('error');
       return;
+    }
+
+    // Stop existing service if running
+    if (realtimeService) {
+      console.log('RealtimeProvider: Stopping existing service before starting new one');
+      realtimeService.stop();
+      setRealtimeService(null);
     }
 
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://crm-19gz.onrender.com';

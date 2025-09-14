@@ -37,14 +37,20 @@ class RealtimeService {
   }
 
   public start() {
+    console.log('RealtimeService: start() called', {
+      isBrowser: typeof window !== 'undefined',
+      isRunning: this.isRunning,
+      hasCallbacks: !!this.callbacks
+    });
+
     if (typeof window === 'undefined') {
       console.log('RealtimeService: Not in browser environment, skipping start');
       return;
     }
 
     if (this.isRunning) {
-      console.log('RealtimeService: Already running');
-      return;
+      console.log('RealtimeService: Already running, stopping first');
+      this.stop();
     }
 
     console.log('RealtimeService: Starting polling service');
