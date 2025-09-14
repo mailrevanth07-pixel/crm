@@ -1,0 +1,81 @@
+name: Code Quality
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+  push:
+    branches: [ main, develop ]
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  code-quality:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: Install backend dependencies
+        run: |
+          cd backend
+          npm ci
+      
+      - name: Install frontend dependencies
+        run: |
+          cd frontend
+          npm ci
+      
+      - name: Backend TypeScript check
+        run: |
+          cd backend
+          npx tsc --noEmit
+      
+      - name: Frontend TypeScript check
+        run: |
+          cd frontend
+          npx tsc --noEmit
+      
+      - name: Backend ESLint
+        run: |
+          cd backend
+          npm run lint
+      
+      - name: Frontend ESLint
+        run: |
+          cd frontend
+          npm run lint
+      
+      - name: Backend Prettier check
+        run: |
+          cd backend
+          npx prettier --check src/**/*.ts
+      
+      - name: Frontend Prettier check
+        run: |
+          cd frontend
+          npx prettier --check "**/*.{js,jsx,ts,tsx,json,css,md}"
+      
+      - name: Check for TODO comments
+        run: |
+          if grep -r "TODO\|FIXME\|HACK" backend/src frontend/components frontend/pages frontend/lib --exclude-dir=node_modules; then
+            echo "Found TODO/FIXME/HACK comments. Please address them before merging."
+            exit 1
+          fi
+      
+      - name: Check for console.log statements
+        run: |
+          if grep -r "console\.log\|console\.warn\|console\.error" backend/src frontend/components frontend/pages frontend/lib --exclude-dir=node_modules; then
+            echo "Found console statements. Please remove them before merging."
+            exit 1
+          fi
