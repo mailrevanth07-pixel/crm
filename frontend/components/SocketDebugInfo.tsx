@@ -25,12 +25,11 @@ export default function SocketDebugInfo({ className = '' }: SocketDebugInfoProps
     
     // Log socket status
     if (socket) {
-      const status = socket.getConnectionStatus();
       addLog(`Socket: Initialized`);
-      addLog(`Socket ID: ${status.socketId || 'None'}`);
-      addLog(`Connected: ${status.connected ? 'Yes' : 'No'}`);
-      addLog(`Transport: ${status.transport || 'Unknown'}`);
-      addLog(`Queue: ${status.queueLength} items`);
+      addLog(`Socket ID: ${socket.id || 'None'}`);
+      addLog(`Connected: ${socket.connected ? 'Yes' : 'No'}`);
+      addLog(`Transport: ${socket.io?.engine?.transport?.name || 'Unknown'}`);
+      addLog(`Ready State: ${socket.io?.engine?.readyState || 'Unknown'}`);
     } else {
       addLog(`Socket: Not initialized`);
     }
