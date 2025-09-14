@@ -6,9 +6,9 @@ import { SocketHandler } from '../socket/socketHandler';
 // Job queue for background processing
 export class JobQueueService {
   private static instance: JobQueueService;
-  private notificationQueue: Bull.Queue;
-  private emailQueue: Bull.Queue;
-  private cleanupQueue: Bull.Queue;
+  private notificationQueue?: Bull.Queue;
+  private emailQueue?: Bull.Queue;
+  private cleanupQueue?: Bull.Queue;
   private socketHandler?: SocketHandler;
 
   private constructor() {
@@ -326,7 +326,11 @@ export class JobQueueService {
     };
   }
 
-  private async getQueueStatsForQueue(queue: Bull.Queue): Promise<any> {
+  private async getQueueStatsForQueue(queue?: Bull.Queue): Promise<any> {
+    if (!queue) {
+      return { waiting: 0, active: 0, completed: 0, failed: 0 };
+    }
+    
     const [waiting, active, completed, failed] = await Promise.all([
       queue.getWaiting(),
       queue.getActive(),
@@ -353,11 +357,19 @@ export class JobQueueService {
 
   // Clean up resources
   public async close(): Promise<void> {
-    await Promise.all([
-      this.notificationQueue.close(),
-      this.emailQueue.close(),
-      this.cleanupQueue.close()
-    ]);
+    const closePromises = [];
+    
+    if (this.notificationQueue) {
+      closePromises.push(this.notificationQueue.close());
+    }
+    if (this.emailQueue) {
+      closePromises.push(this.emailQueue.close());
+    }
+    if (this.cleanupQueue) {
+      closePromises.push(this.cleanupQueue.close());
+    }
+    
+    await Promise.all(closePromises);
   }
 }
 
