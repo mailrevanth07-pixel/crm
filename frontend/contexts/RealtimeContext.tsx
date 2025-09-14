@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import RealtimeService from '@/lib/realtimeService';
 
@@ -29,6 +29,7 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'error'>('disconnected');
   const [realtimeService, setRealtimeService] = useState<RealtimeService | null>(null);
   const { isAuthenticated, user } = useAuth();
+  const hasInitialized = useRef(false);
 
   // Detect mobile platform (client-side only)
   const [isMobile, setIsMobile] = useState(false);
@@ -45,7 +46,8 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
       isAuthenticated,
       hasUser: !!user,
       userEmail: user?.email,
-      hasExistingService: !!realtimeService
+      hasExistingService: !!realtimeService,
+      isServiceRunning: realtimeService?.getStatus?.()?.isRunning
     });
 
     if (!isAuthenticated || !user) {
@@ -57,6 +59,12 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
     if (!token) {
       console.error('RealtimeProvider: No access token available');
       setConnectionStatus('error');
+      return;
+    }
+
+    // Don't restart if service is already running
+    if (realtimeService && realtimeService.getStatus().isRunning) {
+      console.log('RealtimeProvider: Service already running, skipping restart');
       return;
     }
 
@@ -152,12 +160,19 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
 
   // Initialize realtime when authenticated
   useEffect(() => {
-    console.log('RealtimeProvider: Auth state changed', { isAuthenticated, user: user?.email });
-    if (isAuthenticated && user) {
+    console.log('RealtimeProvider: Auth state changed', { 
+      isAuthenticated, 
+      user: user?.email, 
+      hasInitialized: hasInitialized.current 
+    });
+    
+    if (isAuthenticated && user && !hasInitialized.current) {
       console.log('RealtimeProvider: Starting realtime service');
+      hasInitialized.current = true;
       startRealtime();
-    } else {
+    } else if (!isAuthenticated && hasInitialized.current) {
       console.log('RealtimeProvider: Stopping realtime service');
+      hasInitialized.current = false;
       stopRealtime();
     }
   }, [isAuthenticated, user?.id]); // Only depend on auth state, not the functions
