@@ -9,6 +9,7 @@ import ConnectionStatus from './ConnectionStatus';
 import OnlineUsers from './OnlineUsers';
 import MobileConnectionStatus from './MobileConnectionStatus';
 import SocketDebugInfo from './SocketDebugInfo';
+import ConnectionTester from './ConnectionTester';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -225,11 +226,12 @@ export default function Layout({ children }: LayoutProps) {
         </main>
       </div>
 
-      {/* Real-time Components */}
-      <RealtimeNotifications />
-      <RealtimeActivityStream />
-      <MobileConnectionStatus />
-      <SocketDebugInfo />
+        {/* Real-time Components */}
+        <RealtimeNotifications />
+        <RealtimeActivityStream />
+        <MobileConnectionStatus />
+        <SocketDebugInfo />
+        <ConnectionTester />
       </div>
     </>
   );

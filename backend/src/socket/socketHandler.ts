@@ -48,11 +48,22 @@ export class SocketHandler {
         methods: ["GET", "POST"],
         credentials: true
       },
-      // Mobile-specific configuration
-      pingTimeout: 60000, // 60 seconds
-      pingInterval: 25000, // 25 seconds
-      upgradeTimeout: 10000, // 10 seconds
+      // Ultra-conservative mobile configuration
+      pingTimeout: 300000, // 5 minutes - very conservative
+      pingInterval: 60000, // 1 minute - less frequent pings
+      upgradeTimeout: 30000, // 30 seconds - longer upgrade timeout
       allowEIO3: true, // Allow Engine.IO v3 clients (older mobile browsers)
+      // Disable upgrades completely for mobile compatibility
+      allowUpgrades: false,
+      // Conservative connection settings
+      maxHttpBufferSize: 1e6, // 1MB buffer
+      // Add mobile-specific options
+      transports: ['polling'], // Force polling only
+      // Increase timeouts for mobile networks
+      connectTimeout: 60000, // 60 seconds
+      // Add heartbeat settings
+      heartbeatTimeout: 300000, // 5 minutes
+      heartbeatInterval: 60000, // 1 minute
     };
 
     // Add Redis adapter if Redis is available
@@ -124,8 +135,14 @@ export class SocketHandler {
         user: socket.user?.email,
         userAgent: socket.handshake.headers['user-agent'],
         origin: socket.handshake.headers.origin,
-        transport: socket.conn.transport.name
+        transport: socket.conn.transport.name,
+        timestamp: new Date().toISOString(),
+        remoteAddress: socket.handshake.address,
+        secure: socket.handshake.secure
       });
+
+      // Track connection time
+      (socket as any).connectedAt = Date.now();
 
       // Join user to their personal room and global org room
       if (socket.user) {
@@ -267,12 +284,25 @@ export class SocketHandler {
         socket.emit('pong');
       });
 
+      // Handle test connection
+      socket.on('test_connection', (data) => {
+        console.log('Test connection received:', data);
+        socket.emit('test_response', {
+          success: true,
+          timestamp: Date.now(),
+          receivedData: data,
+          socketId: socket.id
+        });
+      });
+
       // Handle disconnection
       socket.on('disconnect', (reason) => {
         console.log(`Socket disconnected: ${socket.id}`, {
           user: socket.user?.email,
           reason,
-          transport: socket.conn.transport.name
+          transport: socket.conn.transport.name,
+          timestamp: new Date().toISOString(),
+          duration: Date.now() - (socket as any).connectedAt
         });
         
         // Emit user offline event

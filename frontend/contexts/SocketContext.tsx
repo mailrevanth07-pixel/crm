@@ -61,26 +61,37 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
 
     setConnectionStatus('connecting');
 
-    // Create socket with mobile-optimized configuration
+    // Create socket with ultra-conservative mobile configuration
     const newSocket = io(API_URL, {
       auth: { token },
-      // Force polling for mobile to avoid WebSocket issues
-      transports: isMobile ? ['polling'] : ['polling', 'websocket'],
-      timeout: isMobile ? 30000 : 20000,
+      // Force only polling for maximum compatibility
+      transports: ['polling'],
+      // Conservative timeouts for mobile networks
+      timeout: 60000, // 60 seconds
       reconnection: true,
-      reconnectionAttempts: Infinity,
-      reconnectionDelay: isMobile ? 3000 : 2000,
-      reconnectionDelayMax: isMobile ? 15000 : 10000,
+      reconnectionAttempts: 10, // Limit attempts to prevent infinite loops
+      reconnectionDelay: 5000, // 5 seconds between attempts
+      reconnectionDelayMax: 30000, // Max 30 seconds delay
       randomizationFactor: 0.5,
       autoConnect: true,
       forceNew: true,
       withCredentials: true,
-      // Add mobile-specific options
-      upgrade: !isMobile, // Disable upgrade on mobile
-      rememberUpgrade: false, // Don't remember upgrade on mobile
-      // Add ping/pong settings for better connection stability
-      pingTimeout: isMobile ? 180000 : 120000, // 3 minutes for mobile, 2 minutes for desktop
-      pingInterval: isMobile ? 45000 : 30000, // 45 seconds for mobile, 30 seconds for desktop
+      // Disable all upgrades and optimizations that might cause issues
+      upgrade: false,
+      rememberUpgrade: false,
+      // Conservative ping settings
+      pingTimeout: 300000, // 5 minutes
+      pingInterval: 60000, // 1 minute
+      // Add additional mobile-specific options
+      closeOnBeforeunload: false, // Don't close on page unload
+      addTrailingSlash: false,
+      // Force specific polling options
+      polling: {
+        extraHeaders: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      }
     });
 
     // Connection event handlers
@@ -103,20 +114,21 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
       console.log('SocketProvider: Socket disconnected', {
         reason,
         isMobile,
-        transport: newSocket.io?.engine?.transport?.name
+        transport: newSocket.io?.engine?.transport?.name,
+        timestamp: new Date().toISOString()
       });
       setIsConnected(false);
       setConnectionStatus('disconnected');
       
-      // For mobile, if it's a transport close, try to reconnect more aggressively
-      if (isMobile && reason === 'transport close') {
-        console.log('SocketProvider: Mobile transport close detected, scheduling aggressive reconnection');
+      // Implement intelligent reconnection based on disconnect reason
+      if (reason === 'transport close' || reason === 'ping timeout' || reason === 'server namespace disconnect') {
+        console.log('SocketProvider: Critical disconnect detected, scheduling reconnection');
         setTimeout(() => {
           if (!newSocket.connected) {
-            console.log('SocketProvider: Attempting reconnection after transport close');
+            console.log('SocketProvider: Attempting reconnection after critical disconnect');
             newSocket.connect();
           }
-        }, 2000);
+        }, isMobile ? 5000 : 2000);
       }
     });
 
@@ -125,10 +137,22 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
         message: error.message,
         description: error.description,
         type: error.type,
-        isMobile
+        isMobile,
+        timestamp: new Date().toISOString()
       });
       setIsConnected(false);
       setConnectionStatus('error');
+      
+      // For specific errors, try to reconnect
+      if (error.type === 'TransportError' || error.message.includes('timeout')) {
+        console.log('SocketProvider: Transport error detected, scheduling reconnection');
+        setTimeout(() => {
+          if (!newSocket.connected) {
+            console.log('SocketProvider: Attempting reconnection after transport error');
+            newSocket.connect();
+          }
+        }, 3000);
+      }
     });
 
     newSocket.on('reconnect_attempt', (attemptNumber) => {
@@ -170,6 +194,17 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
       console.error('SocketProvider: Upgrade error', error);
     });
 
+    // Add connection health check
+    const healthCheckInterval = setInterval(() => {
+      if (newSocket && !newSocket.connected) {
+        console.log('SocketProvider: Health check - socket not connected, attempting reconnection');
+        newSocket.connect();
+      }
+    }, 30000); // Check every 30 seconds
+
+    // Store interval for cleanup
+    (newSocket as any).healthCheckInterval = healthCheckInterval;
+
     setSocket(newSocket);
   }, [isAuthenticated, user, isMobile]);
 
@@ -179,6 +214,10 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
       connectSocket();
     } else {
       if (socket) {
+        // Clean up health check interval
+        if ((socket as any).healthCheckInterval) {
+          clearInterval((socket as any).healthCheckInterval);
+        }
         socket.disconnect();
         setSocket(null);
       }
@@ -187,6 +226,18 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
       subscribedLeadsRef.current.clear();
     }
   }, [isAuthenticated, user, connectSocket]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (socket) {
+        if ((socket as any).healthCheckInterval) {
+          clearInterval((socket as any).healthCheckInterval);
+        }
+        socket.disconnect();
+      }
+    };
+  }, [socket]);
 
   // Manual reconnect function
   const reconnect = useCallback(() => {
