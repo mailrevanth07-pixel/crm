@@ -21,7 +21,7 @@ interface CollaborativeNoteEditorProps {
 
 interface Participant {
   id: string;
-  name: string;
+  name?: string;
   email: string;
   status: 'viewing' | 'editing' | 'idle';
   cursorPosition?: { line: number; column: number };
@@ -302,7 +302,7 @@ const CollaborativeNoteEditor: React.FC<CollaborativeNoteEditorProps> = ({
                 style={{ backgroundColor: participant.color }}
                 title={`${participant.name} (${participant.status})`}
               >
-                {participant.name.charAt(0).toUpperCase()}
+                {(participant.name || participant.email || 'U').charAt(0).toUpperCase()}
               </div>
             ))}
           </div>

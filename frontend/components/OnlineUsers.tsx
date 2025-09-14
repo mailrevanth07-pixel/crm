@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 
 interface OnlineUser {
   id: string;
-  name: string;
+  name?: string;
   email: string;
   role: string;
   lastSeen: string;
@@ -155,13 +155,13 @@ export default function OnlineUsers({ className = '' }: OnlineUsersProps) {
               <div key={onlineUser.id} className="flex items-center space-x-2">
                 <div className="relative">
                   <div className="w-6 h-6 bg-gray-300 rounded-full flex items-center justify-center text-xs">
-                    {onlineUser.name.charAt(0).toUpperCase()}
+                    {(onlineUser.name || onlineUser.email || 'U').charAt(0).toUpperCase()}
                   </div>
                   <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border border-white"></div>
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium text-gray-900 truncate">
-                    {onlineUser.name}
+                    {onlineUser.name || onlineUser.email || 'Unknown User'}
                   </p>
                   <div className="flex items-center space-x-1">
                     <span className="text-xs">{getRoleIcon(onlineUser.role)}</span>
