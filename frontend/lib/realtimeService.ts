@@ -37,6 +37,11 @@ class RealtimeService {
   }
 
   public start() {
+    if (typeof window === 'undefined') {
+      console.log('RealtimeService: Not in browser environment, skipping start');
+      return;
+    }
+
     if (this.isRunning) {
       console.log('RealtimeService: Already running');
       return;

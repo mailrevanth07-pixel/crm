@@ -30,9 +30,15 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
   const [realtimeService, setRealtimeService] = useState<RealtimeService | null>(null);
   const { isAuthenticated, user } = useAuth();
 
-  // Detect mobile platform
-  const isMobile = typeof window !== 'undefined' && 
-    /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(navigator.userAgent.toLowerCase());
+  // Detect mobile platform (client-side only)
+  const [isMobile, setIsMobile] = useState(false);
+  
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+      setIsMobile(/android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase()));
+    }
+  }, []);
 
   const startRealtime = useCallback(() => {
     if (!isAuthenticated || !user) {

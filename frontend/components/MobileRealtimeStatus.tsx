@@ -9,11 +9,19 @@ interface MobileRealtimeStatusProps {
 export default function MobileRealtimeStatus({ className = '' }: MobileRealtimeStatusProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   const { isConnected, connectionStatus, getStatus, startRealtime, stopRealtime } = useRealtime();
   const { isAuthenticated, user } = useAuth();
 
+  // Ensure we're on the client side
   useEffect(() => {
-    // Detect if running on mobile
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    // Detect if running on mobile (client-side only)
+    if (typeof window === 'undefined') return;
+
     const checkMobile = () => {
       const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
       setIsMobile(/android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase()));
@@ -43,6 +51,11 @@ export default function MobileRealtimeStatus({ className = '' }: MobileRealtimeS
   };
 
   const status = getStatus();
+
+  // Don't render during SSR
+  if (!isClient) {
+    return null;
+  }
 
   return (
     <div className={`fixed bottom-4 left-4 z-50 ${className}`}>
