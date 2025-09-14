@@ -64,6 +64,11 @@ export class JobQueueService {
   }
 
   private setupJobProcessors(): void {
+    if (!this.notificationQueue || !this.emailQueue || !this.cleanupQueue) {
+      console.warn('⚠️  Queues not initialized, skipping job processor setup');
+      return;
+    }
+    
     // Process notification jobs
     this.notificationQueue.process('send-notification', async (job) => {
       const { userId, type, data, priority = 'normal' } = job.data;
@@ -186,6 +191,11 @@ export class JobQueueService {
   }
 
   private setupJobEvents(): void {
+    if (!this.notificationQueue || !this.emailQueue || !this.cleanupQueue) {
+      console.warn('⚠️  Queues not initialized, skipping job events setup');
+      return;
+    }
+    
     // Notification queue events
     this.notificationQueue.on('completed', (job) => {
       // Job completed successfully
