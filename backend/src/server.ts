@@ -63,8 +63,13 @@ app.use(speedLimiter);
 // CORS Configuration
 const corsOptions = {
   origin: function (origin: string | undefined, callback: Function) {
+    console.log('CORS check:', { origin, hasOrigin: !!origin });
+    
     // Allow requests with no origin (mobile apps, Postman, etc.)
-    if (!origin) return callback(null, true);
+    if (!origin) {
+      console.log('CORS: Allowing request with no origin');
+      return callback(null, true);
+    }
     
     const allowedOrigins = [
       process.env.FRONTEND_URL,
@@ -76,15 +81,19 @@ const corsOptions = {
       'https://crm-ten-dusky.vercel.app' // Add Vercel URL
     ].filter(Boolean); // Remove undefined values
     
+    console.log('CORS: Allowed origins:', allowedOrigins);
+    
     // Check if origin is allowed
     if (allowedOrigins.includes(origin)) {
+      console.log('CORS: Origin allowed in list:', origin);
       callback(null, true);
     } else if (origin && origin.includes('.vercel.app')) {
       // Allow all Vercel subdomains
+      console.log('CORS: Origin allowed as Vercel subdomain:', origin);
       callback(null, true);
     } else {
-      console.log('CORS blocked origin:', origin);
-      console.log('Allowed origins:', allowedOrigins);
+      console.log('CORS: Origin blocked:', origin);
+      console.log('CORS: Allowed origins:', allowedOrigins);
       callback(new Error('Not allowed by CORS'));
     }
   },
@@ -104,6 +113,26 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+
+// Additional CORS middleware as fallback
+app.use((req, res, next) => {
+  const origin = req.get('Origin');
+  console.log('Additional CORS middleware:', { origin, method: req.method });
+  
+  if (origin && (origin.includes('.vercel.app') || origin.includes('localhost'))) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, Pragma');
+  }
+  
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+  
+  next();
+});
 
 // Handle preflight requests
 app.options('*', cors(corsOptions));

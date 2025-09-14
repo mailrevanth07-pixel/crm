@@ -141,14 +141,35 @@ class RealtimeService {
   private handlePollResponse(data: any) {
     this.lastPollTime = Date.now();
 
+    console.log('RealtimeService: Processing poll response', {
+      hasNotifications: !!(data.notifications && data.notifications.length > 0),
+      notificationCount: data.notifications?.length || 0,
+      hasActivities: !!(data.activities && data.activities.length > 0),
+      activityCount: data.activities?.length || 0,
+      hasOnlineUsers: !!(data.onlineUsers && data.onlineUsers.length > 0),
+      onlineUserCount: data.onlineUsers?.length || 0
+    });
+
     // Handle different types of real-time data
     if (data.notifications && data.notifications.length > 0) {
+      console.log('RealtimeService: Processing notifications', data.notifications);
       data.notifications.forEach((notification: any) => {
+        console.log('RealtimeService: Processing notification', {
+          id: notification.id,
+          type: notification.type,
+          title: notification.title,
+          read: notification.read
+        });
         // Only show notifications that haven't been seen before
         if (!notification.read) {
+          console.log('RealtimeService: Calling onNotification callback');
           this.callbacks.onNotification?.(notification);
+        } else {
+          console.log('RealtimeService: Skipping read notification');
         }
       });
+    } else {
+      console.log('RealtimeService: No notifications in response');
     }
 
     if (data.activities && data.activities.length > 0) {

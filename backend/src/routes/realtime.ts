@@ -5,6 +5,33 @@ import { Op } from 'sequelize';
 
 const router = express.Router();
 
+// Test endpoint to create a notification
+router.post('/test-notification', authMiddleware, async (req: AuthenticatedRequest, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ success: false, error: 'User not authenticated' });
+    }
+
+    const { NotificationService } = await import('../services/notificationService');
+    const notificationService = NotificationService.getInstance();
+
+    await notificationService.sendNotification({
+      userId: req.user.id,
+      type: 'test',
+      title: 'Test Notification',
+      message: 'This is a test notification to verify the system is working',
+      data: { test: true },
+      category: 'system',
+      priority: 'normal'
+    });
+
+    return res.json({ success: true, message: 'Test notification created' });
+  } catch (error) {
+    console.error('Error creating test notification:', error);
+    return res.status(500).json({ success: false, error: 'Failed to create test notification' });
+  }
+});
+
 // Polling endpoint for real-time updates
 router.get('/poll', authMiddleware, async (req: AuthenticatedRequest, res) => {
   console.log('Realtime poll endpoint hit', {
@@ -65,7 +92,16 @@ router.get('/poll', authMiddleware, async (req: AuthenticatedRequest, res) => {
     try {
       const { redisService } = await import('../config/redis');
       const notificationData = await redisService.lrange(`notifications:${userId}`, 0, 19); // Get last 20 notifications
+      console.log('Realtime poll: Fetched notifications from Redis', {
+        userId,
+        notificationCount: notificationData.length,
+        rawData: notificationData
+      });
       notifications.push(...notificationData.map((n: unknown) => JSON.parse(n as string)));
+      console.log('Realtime poll: Parsed notifications', {
+        count: notifications.length,
+        notifications: notifications.map(n => ({ id: n.id, type: n.type, title: n.title, read: n.read }))
+      });
     } catch (error) {
       console.error('Error fetching notifications:', error);
     }
