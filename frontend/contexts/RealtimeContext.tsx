@@ -146,7 +146,7 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
       console.log('RealtimeProvider: Stopping realtime service');
       stopRealtime();
     }
-  }, [isAuthenticated, user, startRealtime, stopRealtime]);
+  }, [isAuthenticated, user?.id]); // Only depend on auth state, not the functions
 
   // Cleanup on unmount
   useEffect(() => {

@@ -50,6 +50,8 @@ class RealtimeService {
     console.log('RealtimeService: Starting polling service');
     this.isRunning = true;
     this.retryCount = 0;
+    
+    // Only call onStatusChange if we weren't already running
     this.callbacks.onStatusChange?.('connected');
     this.startPolling();
   }

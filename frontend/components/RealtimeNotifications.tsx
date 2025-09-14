@@ -13,8 +13,16 @@ interface Notification {
 
 export default function RealtimeNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [wasConnected, setWasConnected] = useState(false);
   const { socket, isConnected } = useSocket();
   const { user } = useAuth();
+
+  // Reset connection state when disconnected
+  useEffect(() => {
+    if (!isConnected) {
+      setWasConnected(false);
+    }
+  }, [isConnected]);
 
   useEffect(() => {
     if (!socket || !isConnected) return;
@@ -67,12 +75,16 @@ export default function RealtimeNotifications() {
 
     // Connection events
     const handleConnected = (data: any) => {
-      addNotification({
-        type: 'success',
-        title: 'Connected',
-        message: 'Real-time updates are now active',
-        data
-      });
+      // Only show connected notification if we weren't already connected
+      if (!wasConnected) {
+        addNotification({
+          type: 'success',
+          title: 'Connected',
+          message: 'Real-time updates are now active',
+          data
+        });
+        setWasConnected(true);
+      }
     };
 
     const handleHealthStatus = (data: any) => {
