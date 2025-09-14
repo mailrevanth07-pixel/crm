@@ -46,6 +46,21 @@
   .btn-group-mobile {
     @apply flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2;
   }
+  
+  /* Mobile toast improvements */
+  .toast-mobile {
+    @apply mx-2 max-w-full;
+  }
+  
+  /* Better touch targets for mobile */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+  
+  /* Prevent zoom on input focus on iOS */
+  input, textarea, select {
+    font-size: 16px;
+  }
 }
 
 /* Mobile sidebar fixes */
