@@ -5,11 +5,13 @@ A full-stack CRM (Customer Relationship Management) system built with Node.js, T
 ## Features
 
 - **Lead Management**: Create, update, and track sales leads
-- **User Management**: User authentication and authorization
+- **User Management**: Complete user authentication and authorization system
 - **Activity Tracking**: Log and monitor customer interactions
 - **Real-time Collaboration**: WebSocket-based real-time features
 - **Dashboard**: Analytics and KPI tracking
 - **Responsive Design**: Modern UI with Tailwind CSS
+- **Role-based Access Control**: ADMIN, MANAGER, and SALES roles
+- **JWT Authentication**: Secure token-based authentication with refresh tokens
 
 ## Tech Stack
 
@@ -70,10 +72,15 @@ cp .env.local.example .env.local
 ```bash
 cd backend
 npm run migrate
-npm run seed
 ```
 
-5. Start the development servers:
+5. Create your first user account:
+```bash
+# You can create users through the API or directly in the database
+# The system supports three roles: ADMIN, MANAGER, SALES
+```
+
+6. Start the development servers:
 ```bash
 # Backend (from backend directory)
 npm run dev
@@ -81,6 +88,26 @@ npm run dev
 # Frontend (from frontend directory)
 npm run dev
 ```
+
+7. Access the application:
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:3001
+- **API Documentation**: http://localhost:3001/health (health check)
+
+8. Create your first admin user:
+```bash
+# Using curl (replace with your details)
+curl -X POST http://localhost:3001/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Admin User",
+    "email": "admin@yourcompany.com",
+    "password": "adminpassword123",
+    "role": "ADMIN"
+  }'
+```
+
+9. Login and start using the CRM system!
 
 ## Docker Deployment
 
@@ -111,6 +138,78 @@ docker build -t crm-frontend .
 docker run -p 3000:3000 crm-frontend
 ```
 
+## User Management & Authentication
+
+### User Roles
+The system supports three user roles with different access levels:
+
+- **ADMIN**: Full system access, can manage all users, leads, and activities
+- **MANAGER**: Can manage leads and activities, view team performance
+- **SALES**: Can manage assigned leads and activities
+
+### User Registration
+Users can be created through the registration API endpoint:
+
+```bash
+POST /api/auth/register
+Content-Type: application/json
+
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "password": "securepassword123",
+  "role": "SALES"  // Optional: defaults to SALES
+}
+```
+
+### User Login
+Users can log in with their email and password:
+
+```bash
+POST /api/auth/login
+Content-Type: application/json
+
+{
+  "email": "john@example.com",
+  "password": "securepassword123",
+  "rememberMe": false  // Optional: extends token expiry
+}
+```
+
+### Authentication Features
+- **JWT Tokens**: Secure access and refresh tokens
+- **Password Hashing**: Bcrypt encryption for password security
+- **Token Refresh**: Automatic token renewal without re-login
+- **Remember Me**: Extended session for trusted devices
+- **Role-based Access**: Different permissions based on user role
+
+### Creating Your First Admin User
+To get started, you'll need to create an admin user. You can do this by:
+
+1. **Using the API directly**:
+```bash
+curl -X POST http://localhost:3001/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Admin User",
+    "email": "admin@yourcompany.com",
+    "password": "adminpassword123",
+    "role": "ADMIN"
+  }'
+```
+
+2. **Using the frontend registration form** (if available)
+3. **Directly in the database** (for development)
+
+### Default Test Credentials
+For quick testing and development, you can use these pre-configured accounts:
+
+- **Admin**: admin@crm.com / admin123
+- **Manager**: manager@crm.com / manager123
+- **Sales Rep**: sales@crm.com / sales123
+
+> **Note**: These are default credentials for development/testing purposes. Make sure to change them in production environments.
+
 ## API Endpoints
 
 ### Authentication
@@ -118,6 +217,7 @@ docker run -p 3000:3000 crm-frontend
 - `POST /api/auth/login` - User login
 - `POST /api/auth/refresh` - Refresh token
 - `POST /api/auth/logout` - User logout
+- `GET /api/auth/profile` - Get current user profile
 
 ### Leads
 - `GET /api/leads` - Get all leads
@@ -160,12 +260,23 @@ NEXT_PUBLIC_WS_URL=http://localhost:3001
 ## Database Schema
 
 The system uses the following main entities:
-- **Users**: User accounts and authentication
+
+### Users Table
+- **id**: UUID primary key
+- **name**: User's full name (optional)
+- **email**: Unique email address (required)
+- **password**: Bcrypt hashed password (required)
+- **role**: User role - ADMIN, MANAGER, or SALES (default: SALES)
+- **createdAt**: Account creation timestamp
+- **updatedAt**: Last update timestamp
+
+### Other Entities
 - **Leads**: Sales leads and prospects
 - **Activities**: Customer interactions and notes
 - **RefreshTokens**: JWT refresh token management
 - **CollaborativeNotes**: Real-time collaborative notes
 - **UserPresence**: Online user tracking
+- **CollaborativeSessions**: Real-time collaboration sessions
 
 ## Development
 

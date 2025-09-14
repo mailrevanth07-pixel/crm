@@ -38,6 +38,44 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
   const baseReconnectDelay = 1000; // 1 second
   const subscribedLeadsRef = useRef<Set<string>>(new Set());
 
+  // Manual reconnect function (defined early for use in event handlers)
+  const reconnect = useCallback(() => {
+    clearReconnectTimeout();
+    reconnectAttemptsRef.current = 0;
+    
+    if (socket) {
+      socket.disconnect();
+    }
+    
+    // Small delay before reconnecting
+    setTimeout(() => {
+      connectSocket();
+    }, 100);
+  }, [socket]);
+
+  // Mobile event handlers (defined outside connectSocket for proper scope)
+  const handleVisibilityChange = useCallback(() => {
+    if (document.visibilityState === 'visible' && isAuthenticated && !isConnected) {
+      console.log('Page became visible, attempting to reconnect...');
+      setTimeout(() => {
+        if (socket && !isConnected) {
+          reconnect();
+        }
+      }, 1000);
+    }
+  }, [isAuthenticated, isConnected, socket, reconnect]);
+
+  const handleFocus = useCallback(() => {
+    if (isAuthenticated && !isConnected) {
+      console.log('Page focused, attempting to reconnect...');
+      setTimeout(() => {
+        if (socket && !isConnected) {
+          reconnect();
+        }
+      }, 1000);
+    }
+  }, [isAuthenticated, isConnected, socket, reconnect]);
+
   // Reconnection logic with exponential backoff
   const scheduleReconnect = useCallback(() => {
     if (reconnectAttemptsRef.current >= maxReconnectAttempts) {
@@ -93,20 +131,28 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
 
     setConnectionStatus('connecting');
 
-    // Create socket connection with enhanced configuration
+    // Create socket connection with mobile-optimized configuration
     const newSocket = io(API_URL, {
       auth: {
         token: token,
       },
-      transports: ['websocket', 'polling'],
-      timeout: 10000, // 10 second connection timeout
-      reconnection: false, // We'll handle reconnection manually
+      transports: ['polling', 'websocket'], // Start with polling for better mobile compatibility
+      timeout: 15000, // Increased timeout for mobile networks
+      reconnection: true, // Enable automatic reconnection for mobile
+      reconnectionAttempts: 10, // More attempts for mobile
+      reconnectionDelay: 1000, // Start with 1 second delay
+      reconnectionDelayMax: 5000, // Max 5 seconds between attempts
       autoConnect: true,
       forceNew: true, // Force new connection
+      upgrade: true, // Allow transport upgrades
+      rememberUpgrade: true, // Remember successful transport upgrades
+      // Mobile-specific options
+      withCredentials: true
     });
 
     // Connection event handlers
     newSocket.on('connect', () => {
+      console.log('Socket connected successfully');
       setIsConnected(true);
       setConnectionStatus('connected');
       reconnectAttemptsRef.current = 0; // Reset reconnection attempts
@@ -119,11 +165,13 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     });
 
     newSocket.on('disconnect', (reason) => {
+      console.log('Socket disconnected:', reason);
       setIsConnected(false);
       setConnectionStatus('disconnected');
       
       // Only attempt reconnection if it wasn't a manual disconnect
       if (reason !== 'io client disconnect' && isAuthenticated) {
+        console.log('Scheduling reconnection...');
         scheduleReconnect();
       }
     });
@@ -143,6 +191,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
       
       // For other errors, attempt reconnection
       if (isAuthenticated) {
+        console.log('Connection error, attempting reconnection...');
         scheduleReconnect();
       }
     });
@@ -178,23 +227,20 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
       setConnectionStatus('error');
     });
 
-    setSocket(newSocket);
-  }, [isAuthenticated, user]); // Removed getFreshToken, scheduleReconnect, clearReconnectTimeout
+    // Mobile-specific event handlers
+    newSocket.on('reconnecting', (attemptNumber) => {
+      console.log(`Reconnecting... attempt ${attemptNumber}`);
+      setConnectionStatus('connecting');
+    });
 
-  // Manual reconnect function
-  const reconnect = useCallback(() => {
-    clearReconnectTimeout();
-    reconnectAttemptsRef.current = 0;
-    
-    if (socket) {
-      socket.disconnect();
-    }
-    
-    // Small delay before reconnecting
-    setTimeout(() => {
-      connectSocket();
-    }, 100);
-  }, [socket]); // Removed connectSocket and clearReconnectTimeout from dependencies
+    newSocket.on('reconnect', (attemptNumber) => {
+      console.log(`Reconnected after ${attemptNumber} attempts`);
+      setConnectionStatus('connected');
+      reconnectAttemptsRef.current = 0;
+    });
+
+    setSocket(newSocket);
+  }, [isAuthenticated, user]);
 
   // Subscribe to lead function
   const subscribeToLead = useCallback((leadId: string) => {
@@ -242,6 +288,25 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
       clearReconnectTimeout();
     };
   }, [clearReconnectTimeout]);
+
+  // Mobile event listeners effect
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+    }
+    if (typeof window !== 'undefined') {
+      window.addEventListener('focus', handleFocus);
+    }
+
+    return () => {
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      }
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('focus', handleFocus);
+      }
+    };
+  }, [handleVisibilityChange, handleFocus]);
 
   const value = {
     socket,

@@ -7,6 +7,7 @@ import { redisService } from '../config/redis';
 export interface AuthenticatedSocket extends Socket {
   user?: {
     id: string;
+    name?: string;
     email: string;
     role: string;
   };
@@ -18,10 +19,34 @@ export class SocketHandler {
   constructor(server: HTTPServer) {
     const ioConfig: any = {
       cors: {
-        origin: process.env.FRONTEND_URL || "http://localhost:3000",
+        origin: function (origin: string | undefined, callback: Function) {
+          // Allow requests with no origin (mobile apps, Postman, etc.)
+          if (!origin) return callback(null, true);
+          
+          const allowedOrigins = [
+            process.env.FRONTEND_URL,
+            process.env.CORS_ORIGIN,
+            'http://localhost:3000',
+            'https://localhost:3000',
+            'http://127.0.0.1:3000',
+            'https://127.0.0.1:3000'
+          ].filter(Boolean);
+          
+          if (allowedOrigins.includes(origin)) {
+            callback(null, true);
+          } else {
+            console.log('Socket CORS blocked origin:', origin);
+            callback(new Error('Not allowed by CORS'));
+          }
+        },
         methods: ["GET", "POST"],
         credentials: true
-      }
+      },
+      // Mobile-specific configuration
+      pingTimeout: 60000, // 60 seconds
+      pingInterval: 25000, // 25 seconds
+      upgradeTimeout: 10000, // 10 seconds
+      allowEIO3: true, // Allow Engine.IO v3 clients (older mobile browsers)
     };
 
     // Add Redis adapter if Redis is available
@@ -68,6 +93,7 @@ export class SocketHandler {
         // Attach user info to socket
         (socket as AuthenticatedSocket).user = {
           id: user.id,
+          name: user.name,
           email: user.email,
           role: user.role
         };
@@ -88,6 +114,13 @@ export class SocketHandler {
 
   private setupEventHandlers(): void {
     this.io.on('connection', (socket: AuthenticatedSocket) => {
+      console.log(`New socket connection: ${socket.id}`, {
+        user: socket.user?.email,
+        userAgent: socket.handshake.headers['user-agent'],
+        origin: socket.handshake.headers.origin,
+        transport: socket.conn.transport.name
+      });
+
       // Join user to their personal room and global org room
       if (socket.user) {
         socket.join(`user:${socket.user.id}`);
@@ -230,6 +263,11 @@ export class SocketHandler {
 
       // Handle disconnection
       socket.on('disconnect', (reason) => {
+        console.log(`Socket disconnected: ${socket.id}`, {
+          user: socket.user?.email,
+          reason,
+          transport: socket.conn.transport.name
+        });
         
         // Emit user offline event
         if (socket.user) {
