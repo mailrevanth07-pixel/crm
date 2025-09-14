@@ -105,7 +105,7 @@ export default function RealtimeDashboard() {
   return (
     <div className="bg-white rounded-lg shadow-lg border p-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 space-y-2 sm:space-y-0">
         <div className="flex items-center space-x-2">
           <h2 className="text-xl font-bold text-gray-900">Live Dashboard</h2>
           <div className="flex items-center space-x-1">
@@ -166,7 +166,7 @@ export default function RealtimeDashboard() {
 
       {/* Connection Status */}
       <div className="mt-6 pt-4 border-t">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
           <div className="flex items-center space-x-2">
             <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
             <span className="text-sm text-gray-600">
@@ -174,7 +174,7 @@ export default function RealtimeDashboard() {
             </span>
           </div>
           {!isConnected && (
-            <button className="text-sm text-primary-600 hover:text-primary-800">
+            <button className="text-sm text-primary-600 hover:text-primary-800 w-full sm:w-auto text-left sm:text-right">
               Reconnect
             </button>
           )}

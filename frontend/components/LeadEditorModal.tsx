@@ -194,7 +194,7 @@ export default function LeadEditorModal({ isOpen, onClose, onSave, lead }: LeadE
         ></div>
 
         {/* Modal panel */}
-        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full mx-4">
           <form onSubmit={handleSubmit}>
             <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
               <div className="sm:flex sm:items-start">
@@ -246,7 +246,7 @@ export default function LeadEditorModal({ isOpen, onClose, onSave, lead }: LeadE
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label htmlFor="status" className="block text-sm font-medium text-gray-700">
                           Status
@@ -308,7 +308,7 @@ export default function LeadEditorModal({ isOpen, onClose, onSave, lead }: LeadE
               </div>
             </div>
 
-            <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+            <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse space-y-2 sm:space-y-0">
               <button
                 type="submit"
                 disabled={isLoading}
@@ -319,7 +319,7 @@ export default function LeadEditorModal({ isOpen, onClose, onSave, lead }: LeadE
               <button
                 type="button"
                 onClick={onClose}
-                className="btn-secondary mt-3 sm:mt-0 sm:w-auto w-full"
+                className="btn-secondary sm:mt-0 sm:w-auto w-full"
               >
                 Cancel
               </button>

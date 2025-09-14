@@ -54,7 +54,7 @@ export default function AddActivityForm({ leadId, onActivityAdded }: AddActivity
       <h3 className="text-lg font-semibold text-gray-900 mb-4">Add Activity</h3>
       
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label htmlFor="type" className="block text-sm font-medium text-gray-700">
               Type
@@ -113,7 +113,7 @@ export default function AddActivityForm({ leadId, onActivityAdded }: AddActivity
           </div>
         )}
 
-        <div className="flex justify-end space-x-3">
+        <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3">
           <button
             type="button"
             onClick={() => {
@@ -125,14 +125,14 @@ export default function AddActivityForm({ leadId, onActivityAdded }: AddActivity
               });
               setError(null);
             }}
-            className="btn-secondary"
+            className="btn-secondary w-full sm:w-auto"
           >
             Clear
           </button>
           <button
             type="submit"
             disabled={isLoading}
-            className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+            className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
           >
             {isLoading ? 'Adding...' : 'Add Activity'}
           </button>

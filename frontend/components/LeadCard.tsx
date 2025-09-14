@@ -75,7 +75,7 @@ export default function LeadCard({ lead, onEdit }: LeadCardProps) {
         </div>
       </div>
       
-      <div className="mt-4 flex items-center justify-between text-sm text-gray-500">
+      <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0 text-sm text-gray-500">
         <span>Updated {formatDate(lead.updatedAt)}</span>
         <div className="flex space-x-2">
           {onEdit && (

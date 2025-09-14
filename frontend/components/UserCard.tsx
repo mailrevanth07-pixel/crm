@@ -81,7 +81,7 @@ export default function UserCard({ user, onEdit, onDelete, canEdit, canDelete }:
       </div>
 
       {/* Action Buttons */}
-      <div className="mt-6 flex space-x-2">
+      <div className="mt-6 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
         {canEdit && (
           <button
             onClick={() => onEdit(user)}

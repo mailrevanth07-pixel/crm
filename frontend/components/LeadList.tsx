@@ -127,8 +127,8 @@ const LeadList = forwardRef<LeadListRef, LeadListProps>(({ onEditLead }, ref) =>
   return (
     <div className="space-y-4">
       {/* Filter controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
-        <div className="flex space-x-2">
+      <div className="flex flex-col space-y-3">
+        <div className="flex flex-wrap gap-2">
           {statusOptions.map((option) => (
             <button
               key={option.value}
@@ -143,7 +143,7 @@ const LeadList = forwardRef<LeadListRef, LeadListProps>(({ onEditLead }, ref) =>
             </button>
           ))}
         </div>
-        <div className="text-sm text-gray-500">
+        <div className="text-sm text-gray-500 text-center sm:text-left">
           {filteredLeads.length} of {(leads || []).length} leads
         </div>
       </div>

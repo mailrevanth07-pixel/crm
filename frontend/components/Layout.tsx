@@ -17,6 +17,14 @@ export default function Layout({ children }: LayoutProps) {
   const { user, logout } = useAuth();
   const router = useRouter();
 
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
+  const closeSidebar = () => {
+    setSidebarOpen(false);
+  };
+
   const navigation = [
     { name: 'Dashboard', href: '/', icon: '📊' },
     { name: 'Leads', href: '/leads', icon: '👥' },
@@ -46,38 +54,34 @@ export default function Layout({ children }: LayoutProps) {
         <link rel="icon" href="/favicon.ico" />
         <meta name="description" content="Mohan Mutha Exports Pvt. Ltd. - Customer Relationship Management System" />
       </Head>
-      <div className="h-screen flex overflow-hidden bg-gray-50">
+      
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-40 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        >
-          <div className="absolute inset-0 bg-gray-600 opacity-75"></div>
-        </div>
+          className="mobile-sidebar-overlay lg:hidden"
+          onClick={closeSidebar}
+        />
       )}
 
       {/* Mobile sidebar */}
       <div
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-xl transform transition-transform duration-300 ease-in-out lg:hidden ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        className={`mobile-sidebar bg-white shadow-xl lg:hidden ${
+          sidebarOpen ? 'open' : ''
         }`}
       >
-        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <div className="">
-                <img src="/logo.png" alt="CRM Logo" className="" style={{ maxWidth: '40%', height: 'auto' }} />
-              </div>
+        <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
+          <div className="flex items-center flex-1 min-w-0">
+            <div className="flex-shrink-0 mr-3">
+              <img src="/logo.png" alt="CRM Logo" className="w-8 h-8 object-contain" />
             </div>
-            {/* <div className="ml-3">
-              <h1 className="text-xl font-bold text-gray-900">CRM</h1>
-              <p className="text-xs text-gray-500">Customer Management</p>
-            </div> */}
+            <div className="flex-1 min-w-0">
+              <h1 className="text-sm font-semibold text-gray-900 truncate">Mohan Mutha</h1>
+              <p className="text-xs text-gray-500 truncate">Exports Pvt. Ltd.</p>
+            </div>
           </div>
           <button
-            onClick={() => setSidebarOpen(false)}
-            className="text-gray-500 hover:text-gray-700 p-2 rounded-md hover:bg-gray-100"
+            onClick={closeSidebar}
+            className="text-gray-500 hover:text-gray-700 p-2 rounded-md hover:bg-gray-100 flex-shrink-0"
           >
             <span className="sr-only">Close sidebar</span>
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -85,6 +89,7 @@ export default function Layout({ children }: LayoutProps) {
             </svg>
           </button>
         </div>
+        
         <nav className="mt-6 px-3 space-y-1 flex-1">
           {navigation
             .filter(item => !item.adminOnly || user?.role === 'ADMIN')
@@ -92,12 +97,12 @@ export default function Layout({ children }: LayoutProps) {
               <Link
                 key={item.name}
                 href={item.href}
-                className={`group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
+                className={`group flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors duration-200 ${
                   isCurrentPath(item.href)
                     ? 'bg-primary-100 text-primary-900 border-r-2 border-primary-600'
                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                 }`}
-                onClick={() => setSidebarOpen(false)}
+                onClick={closeSidebar}
               >
                 <span className="mr-3 text-lg flex-shrink-0">{item.icon}</span>
                 <span className="truncate">{item.name}</span>
@@ -112,6 +117,8 @@ export default function Layout({ children }: LayoutProps) {
         </div>
       </div>
 
+      {/* Main container */}
+      <div className="h-screen flex overflow-hidden bg-gray-50">
       {/* Desktop sidebar */}
       <div className="hidden lg:flex lg:flex-shrink-0">
         <div className="flex flex-col w-64">
@@ -163,8 +170,8 @@ export default function Layout({ children }: LayoutProps) {
         <div className="flex-shrink-0 flex h-16 bg-white shadow-sm border-b border-gray-200">
           <button
             type="button"
-            className="px-4 border-r border-gray-200 text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500 lg:hidden flex items-center justify-center"
-            onClick={() => setSidebarOpen(true)}
+            className="px-4 border-r border-gray-200 text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500 lg:hidden flex items-center justify-center min-w-[3rem]"
+            onClick={toggleSidebar}
           >
             <span className="sr-only">Open sidebar</span>
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

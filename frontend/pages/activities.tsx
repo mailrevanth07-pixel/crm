@@ -157,7 +157,7 @@ export default function ActivitiesPage() {
 
         {/* Filters */}
         <div className="card mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Activity Type</label>
               <select
@@ -183,7 +183,7 @@ export default function ActivitiesPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
-            <div className="flex items-end">
+            <div className="flex items-end sm:col-span-2 lg:col-span-1">
               <button
                 onClick={() => setFilters({ page: 1, limit: 20, type: '', leadId: '' })}
                 className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
@@ -271,13 +271,13 @@ export default function ActivitiesPage() {
 
               {/* Pagination */}
               {activitiesData.pagination.totalPages > 1 && (
-                <div className="mt-6 flex items-center justify-between">
-                  <div className="text-sm text-gray-500">
+                <div className="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+                  <div className="text-sm text-gray-500 text-center sm:text-left">
                     Showing {((activitiesData.pagination.page - 1) * activitiesData.pagination.limit) + 1} to{' '}
                     {Math.min(activitiesData.pagination.page * activitiesData.pagination.limit, activitiesData.pagination.total)} of{' '}
                     {activitiesData.pagination.total} results
                   </div>
-                  <div className="flex space-x-2">
+                  <div className="flex justify-center space-x-2">
                     <button
                       onClick={() => handlePageChange(activitiesData.pagination.page - 1)}
                       disabled={activitiesData.pagination.page === 1}

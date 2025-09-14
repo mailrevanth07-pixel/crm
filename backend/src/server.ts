@@ -202,12 +202,31 @@ async function startServer() {
     // Initialize database connection
     console.log('🔄 Connecting to database...');
     console.log('Database URL:', process.env.DATABASE_URL ? 'Set' : 'Not set');
+    
+    // Log environment variables for debugging
+    console.log('Environment variables:', {
+      NODE_ENV: process.env.NODE_ENV,
+      DATABASE_URL: process.env.DATABASE_URL ? 'Set' : 'Not set',
+      DB_HOST: process.env.DB_HOST || 'Not set',
+      DB_PORT: process.env.DB_PORT || 'Not set',
+      DB_NAME: process.env.DB_NAME || 'Not set',
+      DB_USER: process.env.DB_USER || 'Not set',
+      DB_PASSWORD: process.env.DB_PASSWORD ? 'Set' : 'Not set'
+    });
+    
     try {
       await sequelize.authenticate();
       console.log('✅ Database connected successfully');
     } catch (dbError) {
       console.error('❌ Database connection failed:', dbError);
       console.error('Database URL being used:', process.env.DATABASE_URL);
+      console.error('Fallback config being used:', {
+        host: process.env.DB_HOST || 'localhost',
+        port: process.env.DB_PORT || '5432',
+        database: process.env.DB_NAME || 'crm_db',
+        username: process.env.DB_USER || 'postgres',
+        hasPassword: !!process.env.DB_PASSWORD
+      });
       throw dbError;
     }
     

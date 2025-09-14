@@ -97,7 +97,7 @@ const dbConfig: DatabaseConfig = databaseUrl ? parsedConfig as DatabaseConfig : 
   username: dbUser,
   password: dbPassword,
   dialect: 'postgres' as const,
-  logging: false,
+  logging: process.env.NODE_ENV === 'development',
   pool: {
     max: 5,
     min: 0,
@@ -105,7 +105,10 @@ const dbConfig: DatabaseConfig = databaseUrl ? parsedConfig as DatabaseConfig : 
     idle: 10000,
   },
   dialectOptions: {
-    ssl: false,
+    ssl: process.env.NODE_ENV === 'production' ? {
+      require: true,
+      rejectUnauthorized: false
+    } : false,
     connectTimeout: 10000,
     acquireTimeout: 10000,
     timeout: 10000
@@ -125,6 +128,14 @@ console.log('Database configuration:', {
     hasPassword: !!parsedConfig.password
   } : 'Using fallback config'
 });
+
+// Log the actual database URL for debugging (without password)
+if (databaseUrl) {
+  const url = new URL(databaseUrl);
+  console.log('Database URL:', `${url.protocol}//${url.username}:***@${url.hostname}:${url.port}${url.pathname}`);
+} else {
+  console.log('Database URL: Not set');
+}
 
 const sequelize = new Sequelize(dbConfig);
 

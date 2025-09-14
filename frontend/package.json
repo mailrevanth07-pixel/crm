@@ -13,10 +13,7 @@
     "docker:dev": "docker-compose -f ../docker-compose.full.yml up --build",
     "docker:prod": "docker-compose -f ../docker-compose.prod.full.yml up --build",
     "docker:down": "docker-compose -f ../docker-compose.full.yml down",
-    "docker:logs": "docker-compose -f ../docker-compose.full.yml logs -f frontend",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "docker:logs": "docker-compose -f ../docker-compose.full.yml logs -f frontend"
   },
   "dependencies": {
     "axios": "^1.6.0",
@@ -55,12 +52,6 @@
     "eslint-config-next": "14.0.0",
     "postcss": "^8.4.31",
     "tailwindcss": "^3.3.5",
-    "typescript": "^5.0.0",
-    "jest": "^29.7.0",
-    "@types/jest": "^29.5.8",
-    "jest-environment-jsdom": "^29.7.0",
-    "@testing-library/react": "^14.1.2",
-    "@testing-library/jest-dom": "^6.1.5",
-    "@testing-library/user-event": "^14.5.1"
+    "typescript": "^5.0.0"
   }
 }

@@ -33,10 +33,7 @@
     "docker:shell:dev": "docker-compose -f docker-compose.dev.yml exec backend sh",
     "docker:migrate": "docker-compose exec backend npm run migrate",
     "docker:seed": "docker-compose exec backend npm run seed:run",
-    "docker:setup": "docker-compose exec backend npm run setup",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "docker:setup": "docker-compose exec backend npm run setup"
   },
   "dependencies": {
     "@socket.io/redis-adapter": "^8.2.1",
@@ -77,12 +74,7 @@
     "sequelize-cli": "^6.6.2",
     "socket.io-client": "^4.7.4",
     "ts-node": "^10.9.1",
-    "typescript": "^5.3.0",
-    "jest": "^29.7.0",
-    "@types/jest": "^29.5.8",
-    "ts-jest": "^29.1.1",
-    "supertest": "^6.3.3",
-    "@types/supertest": "^2.0.16"
+    "typescript": "^5.3.0"
   },
   "keywords": [
     "crm",

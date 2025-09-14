@@ -110,39 +110,42 @@ function LeadDetail() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          <div className="xl:col-span-2 space-y-6">
             <div className="card">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Lead Information</h2>
-              <div className="space-y-3">
-                <div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="sm:col-span-2">
                   <label className="text-sm font-medium text-gray-500">Description</label>
-                  <p className="text-gray-900">{lead.description || 'No description provided'}</p>
+                  <p className="text-gray-900 mt-1">{lead.description || 'No description provided'}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Status</label>
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    lead.status === 'NEW' ? 'bg-blue-100 text-blue-800' :
-                    lead.status === 'CONTACTED' ? 'bg-yellow-100 text-yellow-800' :
-                    lead.status === 'QUALIFIED' ? 'bg-green-100 text-green-800' :
-                    lead.status === 'PROPOSAL' ? 'bg-purple-100 text-purple-800' :
-                    lead.status === 'NEGOTIATION' ? 'bg-orange-100 text-orange-800' :
-                    lead.status === 'CLOSED_WON' ? 'bg-green-100 text-green-800' :
-                    lead.status === 'CLOSED_LOST' ? 'bg-red-100 text-red-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
-                    {lead.status}
-                  </span>
+                  <div className="mt-1">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      lead.status === 'NEW' ? 'bg-blue-100 text-blue-800' :
+                      lead.status === 'CONTACTED' ? 'bg-yellow-100 text-yellow-800' :
+                      lead.status === 'QUALIFIED' ? 'bg-green-100 text-green-800' :
+                      lead.status === 'PROPOSAL' ? 'bg-purple-100 text-purple-800' :
+                      lead.status === 'NEGOTIATION' ? 'bg-orange-100 text-orange-800' :
+                      lead.status === 'CLOSED_WON' ? 'bg-green-100 text-green-800' :
+                      lead.status === 'CLOSED_LOST' ? 'bg-red-100 text-red-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {lead.status}
+                    </span>
+                  </div>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Owner</label>
-                  <p className="text-gray-900">{lead.owner?.name || 'Unassigned'} ({lead.owner?.email || 'N/A'})</p>
+                  <p className="text-gray-900 mt-1">{lead.owner?.name || 'Unassigned'}</p>
+                  <p className="text-sm text-gray-500">{lead.owner?.email || 'N/A'}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Created</label>
-                  <p className="text-gray-900">{new Date(lead.createdAt).toLocaleDateString('en-US', {
+                  <p className="text-gray-900 mt-1 text-sm">{new Date(lead.createdAt).toLocaleDateString('en-US', {
                     year: 'numeric',
-                    month: 'long',
+                    month: 'short',
                     day: 'numeric',
                     hour: '2-digit',
                     minute: '2-digit'
@@ -150,9 +153,9 @@ function LeadDetail() {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Last Updated</label>
-                  <p className="text-gray-900">{new Date(lead.updatedAt).toLocaleDateString('en-US', {
+                  <p className="text-gray-900 mt-1 text-sm">{new Date(lead.updatedAt).toLocaleDateString('en-US', {
                     year: 'numeric',
-                    month: 'long',
+                    month: 'short',
                     day: 'numeric',
                     hour: '2-digit',
                     minute: '2-digit'

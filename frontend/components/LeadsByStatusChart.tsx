@@ -88,14 +88,14 @@ export default function LeadsByStatusChart({ data, isLoading = false }: LeadsByS
 
   const CustomLegend = ({ payload }: any) => {
     return (
-      <div className="flex flex-wrap justify-center gap-4 mt-4">
+      <div className="flex flex-wrap justify-center gap-2 sm:gap-4 mt-4">
         {payload.map((entry: any, index: number) => (
-          <div key={index} className="flex items-center space-x-2">
+          <div key={index} className="flex items-center space-x-1 sm:space-x-2">
             <div
-              className="w-3 h-3 rounded-full"
+              className="w-3 h-3 rounded-full flex-shrink-0"
               style={{ backgroundColor: entry.color }}
             />
-            <span className="text-sm text-gray-600">
+            <span className="text-xs sm:text-sm text-gray-600">
               {entry.value} ({entry.payload.count})
             </span>
           </div>
