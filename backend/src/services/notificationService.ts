@@ -39,18 +39,28 @@ export class NotificationService {
     delay?: number;
   }): Promise<void> {
     try {
-      await jobQueueService.addNotificationJob({
+      const { redisService } = await import('../config/redis');
+      
+      const notification = {
+        id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         userId: data.userId,
         type: data.type,
-        data: {
-          title: data.title,
-          message: data.message,
-          data: data.data,
-          category: data.category || 'system'
-        },
+        title: data.title,
+        message: data.message,
+        data: data.data,
+        category: data.category || 'system',
         priority: data.priority || 'normal',
-        delay: data.delay || 0
-      });
+        read: false,
+        createdAt: new Date().toISOString()
+      };
+
+      // Store notification in Redis
+      await redisService.lpush(`notifications:${data.userId}`, JSON.stringify(notification));
+      
+      // Keep only last 50 notifications per user
+      await redisService.ltrim(`notifications:${data.userId}`, 0, 49);
+      
+      console.log(`Notification sent to user ${data.userId}:`, notification.title);
     } catch (error) {
       console.error('Error sending notification:', error);
       throw error;

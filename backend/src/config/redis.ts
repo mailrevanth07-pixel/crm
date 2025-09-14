@@ -367,6 +367,20 @@ export class RedisService {
       return [];
     }
   }
+
+  public async ltrim(key: string, start: number, stop: number): Promise<void> {
+    if (!this.client) {
+      console.warn('⚠️  Redis not available, skipping LTRIM operation');
+      return;
+    }
+    
+    try {
+      await this.client.lTrim(key, start, stop);
+    } catch (error) {
+      console.error('Redis LTRIM error:', error);
+      throw error;
+    }
+  }
 }
 
 export const redisService = RedisService.getInstance();
