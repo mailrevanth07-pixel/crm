@@ -75,6 +75,14 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     if (!isAuthenticated || !user) return;
 
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://crm-19gz.onrender.com';
+    
+    // Debug: Log the API URL being used for socket
+    console.log('Socket API Configuration:', {
+      NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+      resolvedAPI_URL: API_URL,
+      nodeEnv: process.env.NODE_ENV
+    });
+    
     const token = getFreshToken();
     
     if (!token) {

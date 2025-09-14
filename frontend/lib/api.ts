@@ -2,6 +2,15 @@ import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://crm-19gz.onrender.com';
 
+// Debug: Log the API URL being used
+if (typeof window !== 'undefined') {
+  console.log('API Configuration:', {
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+    resolvedAPI_URL: API_URL,
+    nodeEnv: process.env.NODE_ENV
+  });
+}
+
 export const api = axios.create({
   baseURL: API_URL,
   headers: {
