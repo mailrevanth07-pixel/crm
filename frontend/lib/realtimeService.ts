@@ -117,7 +117,10 @@ class RealtimeService {
     // Handle different types of real-time data
     if (data.notifications && data.notifications.length > 0) {
       data.notifications.forEach((notification: any) => {
-        this.callbacks.onNotification?.(notification);
+        // Only show notifications that haven't been seen before
+        if (!notification.read) {
+          this.callbacks.onNotification?.(notification);
+        }
       });
     }
 

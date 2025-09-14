@@ -404,6 +404,22 @@ export class LeadController {
         ]
       });
 
+      // Send notifications
+      const { NotificationService } = await import('../services/notificationService');
+      const notificationService = NotificationService.getInstance();
+      
+      try {
+        await notificationService.notifyLeadAssigned(
+          updatedLead,
+          previousOwnerId,
+          req.user!,
+          owner
+        );
+      } catch (notificationError) {
+        console.error('Failed to send lead assignment notification:', notificationError);
+        // Don't fail the request if notification fails
+      }
+
       // Emit socket event
       const socketHandler = req.app.get('socketHandler');
       if (socketHandler) {

@@ -53,8 +53,15 @@ router.get('/poll', authMiddleware, async (req: AuthenticatedRequest, res) => {
       limit: 100
     });
 
-    // Get notifications (you can implement a proper notification system)
-    const notifications: any[] = []; // Placeholder for notifications
+    // Get notifications from Redis
+    const notifications: any[] = [];
+    try {
+      const { redisService } = await import('../config/redis');
+      const notificationData = await redisService.lrange(`notifications:${userId}`, 0, 19); // Get last 20 notifications
+      notifications.push(...notificationData.map((n: string) => JSON.parse(n)));
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    }
 
     const response = {
       success: true,

@@ -82,6 +82,9 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
             icon: '/logo.png'
           });
         }
+        
+        // Also trigger custom event for components to listen to
+        window.dispatchEvent(new CustomEvent('realtime-notification', { detail: data }));
       },
       onActivity: (data) => {
         console.log('RealtimeProvider: Activity received', data);
@@ -100,6 +103,15 @@ export const RealtimeProvider: React.FC<RealtimeProviderProps> = ({ children }) 
         console.log('RealtimeProvider: Status changed', status);
         setConnectionStatus(status);
         setIsConnected(status === 'connected');
+        
+        // Emit connection events
+        if (status === 'connected') {
+          window.dispatchEvent(new CustomEvent('realtime-connected', { detail: { status } }));
+        } else if (status === 'disconnected') {
+          window.dispatchEvent(new CustomEvent('realtime-disconnected', { detail: { status } }));
+        } else if (status === 'error') {
+          window.dispatchEvent(new CustomEvent('realtime-error', { detail: { status } }));
+        }
       }
     });
 
