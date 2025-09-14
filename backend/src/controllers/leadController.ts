@@ -409,13 +409,17 @@ export class LeadController {
       const notificationService = NotificationService.getInstance();
       
       try {
-        if (updatedLead) {
-          await notificationService.notifyLeadAssigned(
-            updatedLead,
-            previousOwnerId,
-            req.user!,
-            owner
-          );
+        if (updatedLead && req.user) {
+          // Fetch the full user object for the assignedBy user
+          const assignedByUser = await User.findByPk(req.user.id);
+          if (assignedByUser) {
+            await notificationService.notifyLeadAssigned(
+              updatedLead,
+              previousOwnerId,
+              assignedByUser,
+              owner
+            );
+          }
         }
       } catch (notificationError) {
         console.error('Failed to send lead assignment notification:', notificationError);
