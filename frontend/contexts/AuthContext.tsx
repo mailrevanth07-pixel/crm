@@ -85,10 +85,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const isAuthenticated = !isLoading && !!user && !!auth.getAccessToken();
+  
+  // Debug logging for authentication state
+  useEffect(() => {
+    console.log('Auth state updated:', {
+      isLoading,
+      hasUser: !!user,
+      hasToken: !!auth.getAccessToken(),
+      isAuthenticated,
+      userEmail: user?.email
+    });
+  }, [isLoading, user, isAuthenticated]);
+
   const value = {
     user,
     isLoading,
-    isAuthenticated: !isLoading && !!user && !!auth.getAccessToken(),
+    isAuthenticated,
     login,
     logout,
   };
