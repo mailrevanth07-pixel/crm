@@ -3,7 +3,6 @@ import { Server as HTTPServer } from 'http';
 import jwt from 'jsonwebtoken';
 import { User } from '../models';
 import { redisService } from '../config/redis';
-import { MQTTBridge } from '../services/mqttBridge';
 
 export interface AuthenticatedSocket extends Socket {
   user?: {
@@ -16,7 +15,6 @@ export interface AuthenticatedSocket extends Socket {
 
 export class SocketHandler {
   private io: SocketIOServer;
-  private mqttBridge: MQTTBridge;
 
   constructor(server: HTTPServer) {
     const ioConfig: any = {
@@ -82,21 +80,10 @@ export class SocketHandler {
     }
 
     this.io = new SocketIOServer(server, ioConfig);
-    this.mqttBridge = new MQTTBridge(this.io);
     this.setupMiddleware();
     this.setupEventHandlers();
-    this.initializeMQTTBridge();
   }
 
-  private async initializeMQTTBridge(): Promise<void> {
-    try {
-      await this.mqttBridge.initialize();
-      console.log('✅ MQTT Bridge initialized successfully');
-    } catch (error) {
-      console.error('❌ Failed to initialize MQTT Bridge:', error);
-      // Continue without MQTT - system will work with Socket.IO only
-    }
-  }
 
   private setupMiddleware(): void {
     // Authentication middleware for socket connections
@@ -376,9 +363,6 @@ export class SocketHandler {
     
     // Emit to global org room
     this.emitToOrg('lead:created', eventData);
-    
-    // Publish to MQTT
-    this.mqttBridge.publishLeadEvent(lead.id, 'created', eventData, createdBy.id);
   }
 
   public emitLeadUpdated(lead: any, updatedBy: any): void {
@@ -391,9 +375,6 @@ export class SocketHandler {
     // Emit to both lead-specific room and global org room
     this.emitToLead(lead.id, 'lead:updated', eventData);
     this.emitToOrg('lead:updated', eventData);
-    
-    // Publish to MQTT
-    this.mqttBridge.publishLeadEvent(lead.id, 'updated', eventData, updatedBy.id);
   }
 
   public emitLeadDeleted(leadId: string, deletedBy: any): void {
@@ -419,9 +400,6 @@ export class SocketHandler {
     // Emit to both lead-specific room and global org room
     this.emitToLead(lead.id, 'lead:assigned', eventData);
     this.emitToOrg('lead:assigned', eventData);
-    
-    // Publish to MQTT
-    this.mqttBridge.publishLeadEvent(lead.id, 'assigned', eventData, assignedBy.id);
   }
 
   public emitActivityCreated(activity: any, leadId: string, createdBy: any): void {
@@ -435,9 +413,6 @@ export class SocketHandler {
     // Emit to lead-specific room and global org room
     this.emitToLead(leadId, 'activity:created', eventData);
     this.emitToOrg('activity:created', eventData);
-    
-    // Publish to MQTT
-    this.mqttBridge.publishActivityEvent(activity.id, 'created', eventData, createdBy.id);
   }
 
   public emitActivityUpdated(activity: any, leadId: string, updatedBy: any): void {
@@ -573,9 +548,6 @@ export class SocketHandler {
     };
     
     this.emitToOrg('user:online', eventData);
-    
-    // Publish to MQTT
-    this.mqttBridge.publishPresenceEvent(user.id, 'online', eventData);
   }
 
   public emitUserOffline(userId: string): void {
@@ -585,9 +557,6 @@ export class SocketHandler {
     };
     
     this.emitToOrg('user:offline', eventData);
-    
-    // Publish to MQTT
-    this.mqttBridge.publishPresenceEvent(userId, 'offline', eventData);
   }
 
   public emitUserViewingLead(user: any, leadId: string): void {
@@ -696,8 +665,6 @@ export class SocketHandler {
 
   // Cleanup method
   public async cleanup(): Promise<void> {
-    if (this.mqttBridge) {
-      await this.mqttBridge.cleanup();
-    }
+    // Socket.IO cleanup is handled automatically
   }
 }

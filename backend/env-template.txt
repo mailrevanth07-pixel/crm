@@ -16,7 +16,4 @@ FRONTEND_URL=https://your-frontend-app.vercel.app
 REDIS_URL=redis://your-redis-url
 CORS_ORIGIN=https://your-frontend-app.vercel.app
 
-# MQTT Configuration (for realtime features)
-MQTT_BROKER_URL=wss://your-mqtt-broker.com:8883
-MQTT_USERNAME=your-mqtt-username
-MQTT_PASSWORD=your-mqtt-password
+# Real-time features are handled by Socket.IO (no additional configuration needed)

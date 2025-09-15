@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useRealtime } from '@/contexts/RealtimeContext';
+import { useSocket } from '@/contexts/SocketContext';
 import { useAuth } from '@/hooks/useAuth';
 
 interface MobileNotificationHandlerProps {
@@ -9,7 +9,7 @@ interface MobileNotificationHandlerProps {
 export default function MobileNotificationHandler({ children }: MobileNotificationHandlerProps) {
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
   const [isMobile, setIsMobile] = useState(false);
-  const { isConnected } = useRealtime();
+  const { isConnected } = useSocket();
   const { user } = useAuth();
 
   useEffect(() => {
@@ -34,8 +34,8 @@ export default function MobileNotificationHandler({ children }: MobileNotificati
     }
   }, []);
 
-  // Note: Notifications are now handled by the RealtimeContext
-  // The polling-based system will trigger notifications through the context callbacks
+  // Note: Notifications are now handled by the SocketContext
+  // The Socket.IO system will trigger notifications through the context callbacks
   // This component now only handles notification permission and display
 
   const showMobileNotification = (title: string, body: string) => {
@@ -72,7 +72,7 @@ export default function MobileNotificationHandler({ children }: MobileNotificati
       <div className="fixed top-0 left-0 right-0 z-50 bg-black text-white text-xs p-1 text-center">
         Mobile: {isConnected ? 'Connected' : 'Disconnected'} | 
         Notifications: {notificationPermission} | 
-        Realtime: {isConnected ? 'Polling' : 'Offline'}
+        Socket: {isConnected ? 'Connected' : 'Disconnected'}
       </div>
     );
   }

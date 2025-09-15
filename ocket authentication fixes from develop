@@ -1,0 +1,10 @@
+[33m9b89ffb[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mdevelop[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/develop[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m fix: add client-side only rendering for Socket.IO to fix SSR build errors
+[33m41c9075[m fix: remove reference to deleted MobileRealtimeStatus component
+[33m9737b63[m refactor: remove all alternative real-time implementations, use Socket.IO only
+[33me148779[m merge: integrate socket authentication fixes from develop
+[33me8bbb66[m fix: resolve socket authentication issues
+[33mbfd7c77[m feat: add MQTT authentication configuration tool
+[33m69b4414[m feat: add MQTT setup and configuration tools
+[33m48ecec9[m fix: correct logger import statements in MQTT files
+[33m51fa819[m feat: implement hybrid MQTT + Socket.IO architecture for mobile reliability
+[33mcdc02f8[m Add aggressive global CORS handler to fix blocking issues

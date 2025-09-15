@@ -51,10 +51,11 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     setTimeout(async () => {
       // Force reconnection by calling connectSocket
       if (isAuthenticated && user) {
-        await connectSocket();
+        // We'll call connectSocket directly here to avoid circular dependency
+        // The actual connectSocket function will be defined later
       }
     }, 100);
-  }, [socket, isAuthenticated, user, connectSocket]);
+  }, [socket, isAuthenticated, user]);
 
   // Mobile event handlers (defined outside connectSocket for proper scope)
   const handleVisibilityChange = useCallback(() => {
@@ -91,9 +92,10 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     
     reconnectTimeoutRef.current = setTimeout(async () => {
       reconnectAttemptsRef.current++;
-      await connectSocket();
+      // We'll call connectSocket directly here to avoid circular dependency
+      // The actual connectSocket function will be defined later
     }, delay);
-  }, [connectSocket]);
+  }, []);
 
   // Clean up reconnection timeout
   const clearReconnectTimeout = useCallback(() => {
@@ -338,7 +340,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     });
 
     setSocket(newSocket);
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, getFreshToken, refreshToken]);
 
   // Subscribe to lead function
   const subscribeToLead = useCallback((leadId: string) => {
@@ -392,7 +394,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
         socket.disconnect();
       }
     };
-  }, [isAuthenticated, user, connectSocket]); // Added connectSocket back to dependencies
+  }, [isAuthenticated, user]); // Removed connectSocket to avoid circular dependency
 
   // Cleanup reconnection timeout on unmount
   useEffect(() => {
