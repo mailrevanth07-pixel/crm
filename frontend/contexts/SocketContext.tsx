@@ -39,7 +39,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
   const subscribedLeadsRef = useRef<Set<string>>(new Set());
 
   // Manual reconnect function (defined early for use in event handlers)
-  const reconnect = useCallback(() => {
+  const reconnect = useCallback(async () => {
     clearReconnectTimeout();
     reconnectAttemptsRef.current = 0;
     
@@ -48,33 +48,13 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     }
     
     // Small delay before reconnecting
-    setTimeout(() => {
-      // Force reconnection by creating a new socket
+    setTimeout(async () => {
+      // Force reconnection by calling connectSocket
       if (isAuthenticated && user) {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://crm-19gz.onrender.com';
-        const token = localStorage.getItem('accessToken');
-        
-        if (token) {
-          const newSocket = io(API_URL, {
-            auth: { token: token },
-            transports: ['polling', 'websocket'],
-            timeout: 15000,
-            reconnection: true,
-            reconnectionAttempts: 10,
-            reconnectionDelay: 1000,
-            reconnectionDelayMax: 5000,
-            autoConnect: true,
-            forceNew: true,
-            upgrade: true,
-            rememberUpgrade: true,
-            withCredentials: true
-          });
-          
-          setSocket(newSocket);
-        }
+        await connectSocket();
       }
     }, 100);
-  }, [socket, isAuthenticated, user]);
+  }, [socket, isAuthenticated, user, connectSocket]);
 
   // Mobile event handlers (defined outside connectSocket for proper scope)
   const handleVisibilityChange = useCallback(() => {
@@ -109,11 +89,11 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
 
     const delay = baseReconnectDelay * Math.pow(2, reconnectAttemptsRef.current);
     
-    reconnectTimeoutRef.current = setTimeout(() => {
+    reconnectTimeoutRef.current = setTimeout(async () => {
       reconnectAttemptsRef.current++;
-      connectSocket();
+      await connectSocket();
     }, delay);
-  }, []);
+  }, [connectSocket]);
 
   // Clean up reconnection timeout
   const clearReconnectTimeout = useCallback(() => {
@@ -126,13 +106,69 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
   // Get fresh token
   const getFreshToken = useCallback(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('accessToken');
+      // Use the auth library to get token from both localStorage and sessionStorage
+      const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
+      return token;
     }
     return null;
   }, []);
 
+  // Refresh token function
+  const refreshToken = useCallback(async () => {
+    if (typeof window === 'undefined') return null;
+    
+    try {
+      const refreshTokenValue = localStorage.getItem('refreshToken') || sessionStorage.getItem('refreshToken');
+      if (!refreshTokenValue) {
+        console.error('No refresh token available');
+        return null;
+      }
+
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://crm-19gz.onrender.com';
+      const response = await fetch(`${API_URL}/api/auth/refresh`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ refreshToken: refreshTokenValue }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Token refresh failed');
+      }
+
+      const data = await response.json();
+      const { accessToken } = data.data;
+      
+      // Store in the same storage type as the original token
+      const isRemembered = localStorage.getItem('rememberMe') === 'true';
+      if (isRemembered) {
+        localStorage.setItem('accessToken', accessToken);
+      } else {
+        sessionStorage.setItem('accessToken', accessToken);
+      }
+      
+      console.log('Token refreshed successfully');
+      return accessToken;
+    } catch (error) {
+      console.error('Token refresh failed:', error);
+      // Clear tokens and redirect to login
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
+        localStorage.removeItem('rememberMe');
+        sessionStorage.removeItem('accessToken');
+        sessionStorage.removeItem('refreshToken');
+        sessionStorage.removeItem('user');
+        window.location.href = '/auth/login';
+      }
+      return null;
+    }
+  }, []);
+
   // Connect socket with enhanced configuration
-  const connectSocket = useCallback(() => {
+  const connectSocket = useCallback(async () => {
     if (!isAuthenticated || !user) {
       console.log('Socket connection skipped: Not authenticated or no user');
       return;
@@ -149,15 +185,30 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
       userEmail: user?.email
     });
     
-    const token = getFreshToken();
+    let token = getFreshToken();
+    
+    // If no token, try to refresh it
+    if (!token) {
+      console.log('No access token found, attempting to refresh...');
+      token = await refreshToken();
+    }
     
     if (!token) {
-      console.error('No access token available for socket connection');
+      console.error('No access token available for socket connection after refresh attempt', {
+        localStorageToken: typeof window !== 'undefined' ? localStorage.getItem('accessToken') : 'N/A',
+        sessionStorageToken: typeof window !== 'undefined' ? sessionStorage.getItem('accessToken') : 'N/A',
+        isAuthenticated,
+        userEmail: user?.email
+      });
       setConnectionStatus('error');
       return;
     }
 
-    console.log('Attempting socket connection...');
+    console.log('Attempting socket connection with token:', {
+      tokenLength: token.length,
+      tokenStart: token.substring(0, 10) + '...',
+      userEmail: user?.email
+    });
     setConnectionStatus('connecting');
 
     // Create socket connection with mobile-optimized configuration
@@ -181,10 +232,11 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
 
     // Connection event handlers
     newSocket.on('connect', () => {
-      console.log('Socket connected successfully', {
+      console.log('✅ Socket connected successfully', {
         socketId: newSocket.id,
         transport: newSocket.io.engine?.transport?.name,
-        user: user?.email
+        user: user?.email,
+        timestamp: new Date().toISOString()
       });
       setIsConnected(true);
       setConnectionStatus('connected');
@@ -209,16 +261,29 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
       }
     });
 
-    newSocket.on('connect_error', (error) => {
+    newSocket.on('connect_error', async (error) => {
       console.error('Socket connection error:', error);
       setIsConnected(false);
       setConnectionStatus('error');
       
       // Handle specific error types
       if (error.message === 'Authentication token required' || 
-          error.message === 'Invalid authentication token') {
-        console.error('Authentication failed, user may need to re-login');
-        // Don't attempt reconnection for auth errors
+          error.message === 'Invalid authentication token' ||
+          error.message === 'Authentication token expired') {
+        console.error('Authentication failed, attempting token refresh...');
+        
+        // Try to refresh the token
+        const newToken = await refreshToken();
+        if (newToken) {
+          console.log('Token refreshed, attempting to reconnect...');
+          // Disconnect current socket and try again
+          newSocket.disconnect();
+          setTimeout(() => {
+            connectSocket();
+          }, 1000);
+        } else {
+          console.error('Token refresh failed, user needs to re-login');
+        }
         return;
       }
       
@@ -293,18 +358,32 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
 
   // Main effect for socket connection
   useEffect(() => {
-    if (isAuthenticated && user) {
-      connectSocket();
-    } else {
-      // Disconnect socket if user is not authenticated
-      if (socket) {
-        socket.disconnect();
-        setSocket(null);
-        setIsConnected(false);
-        setConnectionStatus('disconnected');
-        subscribedLeadsRef.current.clear();
+    const initializeSocket = async () => {
+      // Only attempt connection if we're authenticated and have a user
+      if (isAuthenticated && user) {
+        console.log('Auth state ready, attempting socket connection...', {
+          isAuthenticated,
+          userEmail: user?.email,
+          hasToken: !!getFreshToken()
+        });
+        await connectSocket();
+      } else {
+        console.log('Not authenticated or no user, disconnecting socket...', {
+          isAuthenticated,
+          hasUser: !!user
+        });
+        // Disconnect socket if user is not authenticated
+        if (socket) {
+          socket.disconnect();
+          setSocket(null);
+          setIsConnected(false);
+          setConnectionStatus('disconnected');
+          subscribedLeadsRef.current.clear();
+        }
       }
-    }
+    };
+
+    initializeSocket();
 
     // Cleanup on unmount
     return () => {
@@ -313,7 +392,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
         socket.disconnect();
       }
     };
-  }, [isAuthenticated, user]); // Removed connectSocket and socket from dependencies
+  }, [isAuthenticated, user, connectSocket]); // Added connectSocket back to dependencies
 
   // Cleanup reconnection timeout on unmount
   useEffect(() => {
