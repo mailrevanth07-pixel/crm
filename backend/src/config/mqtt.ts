@@ -1,5 +1,5 @@
 import mqtt, { MqttClient } from 'mqtt';
-import { logger } from './logger';
+import logger from './logger';
 
 export interface MQTTConfig {
   brokerUrl: string;

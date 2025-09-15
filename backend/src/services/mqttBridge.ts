@@ -1,6 +1,6 @@
 import { Server as SocketIOServer } from 'socket.io';
 import { mqttService } from '../config/mqtt';
-import { logger } from '../config/logger';
+import logger from '../config/logger';
 import { AuthenticatedSocket } from '../socket/socketHandler';
 
 export interface MQTTMessage {
